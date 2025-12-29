@@ -1,6 +1,8 @@
+require("dotenv").config()
 const User = require("../Models/User.Model.js")
 const bcrypt = require("bcrypt")
-const uploadOnCloudinary = require("../Utils/Cloudinary.js")
+const uploadOnCloudinary = require("../utils/Cloudinary.js")
+const jwt = require("jsonwebtoken")
 
 const userSignup = async (req, res) => {
   try {
@@ -60,4 +62,57 @@ const userSignup = async (req, res) => {
   }
 }
 
-module.exports = { userSignup }
+const userLogin = async (req, res) => {
+  try {
+    const { email, password } = req.body
+
+    if (!email || !password) {
+      return res.status(400).json({
+        msg: "All fields are required"
+      })
+    }
+
+    const existingUser = await User.findOne({ email })
+
+    if (!existingUser) {
+      return res.status(401).json({
+        msg: "Invalid email or password"
+      })
+    }
+
+    const isValid = await bcrypt.compare(password, existingUser.password)
+
+    if (!isValid) {
+      return res.status(401).json({
+        msg: "Invalid email or password"
+      })
+    }
+
+
+    const token = jwt.sign(
+      { userId: existingUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    )
+
+    return res.status(200).json({
+      msg: "Login successful",
+      token,
+      user: {
+        _id: existingUser._id,
+        userName: existingUser.userName,
+        email: existingUser.email,
+        fullName: existingUser.fullName,
+        profilePic: existingUser.profilePic
+      }
+    })
+
+  } catch (error) {
+    console.error("Login error:", error)
+    return res.status(500).json({
+      msg: "Login failed"
+    })
+  }
+}
+
+module.exports = { userSignup,userLogin }
