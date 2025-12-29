@@ -12,7 +12,6 @@ const restrictToLoggedinUserOnly = async (req, res, next) => {
         msg: "Unauthorized: Token missing"
       })
     }
-
     
     const token = authHeader.split(" ")[1]
 
