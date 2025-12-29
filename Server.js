@@ -20,6 +20,9 @@ app.get('/',(req,res)=> {
     res.send("simple server🥳🥳")
 })
 
+const userRouter = require("./Routes/User.route")
+app.use("/api/users",userRouter)
+
 
 app.listen(port,()=>console.log(`Server running on port ${port}`) )
 
