@@ -5,6 +5,8 @@ const isBoardMember = async (req, res, next) => {
     const { boardId } = req.params
     const userId = req.user._id
 
+    if(!boardId) return res.status(400).json({"msg":"BoardId is required!!"})
+
     const membership = await BoardMembership.findOne({
       boardId,
       userId,
