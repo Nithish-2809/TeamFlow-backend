@@ -22,6 +22,8 @@ app.get('/',(req,res)=> {
 
 const userRouter = require("./Routes/User.route")
 app.use("/api/users",userRouter)
+const boardRouter = require("./Routes/Board.route")
+app.user("/api/board",boardRouter)
 
 
 app.listen(port,()=>console.log(`Server running on port ${port}`) )
