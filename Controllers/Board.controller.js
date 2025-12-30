@@ -41,6 +41,36 @@ const createBoard = async (req, res) => {
   }
 }
 
+const myBoards = async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ msg: "Please login to continue" });
+    }
+
+    // Source of truth: BoardMembership
+    const memberships = await BoardMembership.find({
+      userId: user._id,
+      status: "APPROVED",
+    }).populate("boardId");
+
+    
+    const boards = memberships.map((membership) => ({
+      _id: membership.boardId._id,
+      name: membership.boardId.name,
+      leader: membership.boardId.leader,
+      isAdmin: membership.isAdmin,
+      createdAt: membership.boardId.createdAt,
+    }));
+
+    return res.status(200).json({ boards });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to fetch boards" });
+  }
+};
 
 
-module.exports = { createBoard }
+
+module.exports = { createBoard,myBoards }
