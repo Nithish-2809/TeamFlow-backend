@@ -49,7 +49,7 @@ const myBoards = async (req, res) => {
       return res.status(401).json({ msg: "Please login to continue" });
     }
 
-    // Source of truth: BoardMembership
+
     const memberships = await BoardMembership.find({
       userId: user._id,
       status: "APPROVED",
@@ -69,8 +69,37 @@ const myBoards = async (req, res) => {
     console.error(err);
     return res.status(500).json({ msg: "Failed to fetch boards" });
   }
-};
+}
+
+const getBoardById = async (req, res) => {
+  try {
+    const { boardId } = req.params;
+
+    if (!boardId) {
+      return res.status(400).json({ msg: "Please send a boardId" });
+    }
+
+    const membership = req.membership;
+
+    const board = await Board.findById(boardId);
+
+    if (!board) {
+      return res.status(404).json({ msg: "Board not found" });
+    }
+
+    return res.status(200).json({
+      _id: board._id,
+      name: board.name,
+      leader: board.leader,
+      isAdmin: membership.isAdmin,
+      createdAt: board.createdAt,
+    })
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to fetch the board details!" });
+  }
+}
 
 
 
-module.exports = { createBoard,myBoards }
+module.exports = { createBoard,myBoards,getBoardById }
