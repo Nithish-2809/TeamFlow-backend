@@ -39,6 +39,26 @@ const createList = async (req, res) => {
   }
 }
 
-module.exports = { createList }
+const getLists = async (req, res) => {
+  try {
+    const boardId = req.membership.boardId;
+
+    const lists = await List.find({ boardId })
+      .sort({ position: 1 });
+
+    return res.status(200).json({
+      lists
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to get lists!" });
+  }
+}
+
+
+
+
+
+module.exports = { createList,getLists }
 
 
