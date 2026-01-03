@@ -55,10 +55,40 @@ const getLists = async (req, res) => {
   }
 }
 
+const renameList = async (req,res)=> {
+  try {
+    const {listId} = req.params
+    let {name} = req.body
+    const boardId = req.membership.boardId
+    
+    if(!name || !name.trim()) return res.status(400).json({"msg" : "Please enter the new list name"})
+    
+      name = name.trim()
+
+    const updatedList = await List.findOneAndUpdate(
+      {_id : listId,boardId},
+      {name},
+      {new : true}
+    )
+
+    if(!updatedList) return res.status(404).json({"msg" : "List not found!"})
+    
+    return res.status(200).json({
+      msg: "List renamed successfully",
+      list: {
+        _id: updatedList._id,
+        name: updatedList.name,
+      }
+    })
+  }
+  catch(err) {
+    console.log(err)
+    return res.status(500).json({"msg" : "Failed to rename the list!!"})
+  }
+}
 
 
 
-
-module.exports = { createList,getLists }
+module.exports = { createList,getLists,renameList }
 
 
