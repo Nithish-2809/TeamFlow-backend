@@ -20,7 +20,7 @@ const isBoardMember = async (req, res, next) => {
     }
 
     
-    req.boardMembership = membership
+    req.membership = membership
 
     next()
 
