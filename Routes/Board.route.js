@@ -4,6 +4,7 @@ const restrictToLoggedinUserOnly = require("../Middlewares/AuthZ.middleware")
 const isBoardMember = require("../Middlewares/isBoardMember.middleware")
 const boardRouter = express.Router()
 const listRouter = require("./List.route")
+const inviteRouter = require("./Invite.route")
 const isBoardAdmin = require("../Middlewares/isBoardAdmin.middleware")
 
 boardRouter
@@ -17,7 +18,14 @@ boardRouter.use(
   restrictToLoggedinUserOnly,
   isBoardMember,
   listRouter
-);
+)
+
+boardRouter.use(
+  "/:boardId/invite",
+  restrictToLoggedinUserOnly,
+  isBoardMember,
+  inviteRouter
+)
 
 
 module.exports = boardRouter
