@@ -87,8 +87,45 @@ const renameList = async (req,res)=> {
   }
 }
 
+const reorderLists = async (req, res) => {
+  try {
+    const { orderedListIds } = req.body;
+    const boardId = req.membership.boardId;
+
+    if (!Array.isArray(orderedListIds) || orderedListIds.length === 0) {
+      return res.status(400).json({ msg: "orderedListIds must be a non-empty array" });
+    }
+
+  
+    const count = await List.countDocuments({
+      _id: { $in: orderedListIds },
+      boardId
+    });
+
+    if (count !== orderedListIds.length) {
+      return res.status(400).json({ msg: "Invalid list reorder data" });
+    }
+
+    
+    const bulkOps = orderedListIds.map((listId, index) => ({
+      updateOne: {
+        filter: { _id: listId, boardId },
+        update: { position: index + 1 }
+      }
+    }));
+
+    await List.bulkWrite(bulkOps);
+
+    return res.status(200).json({
+      msg: "Lists reordered successfully"
+    })
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to reorder lists" });
+  }
+};
 
 
-module.exports = { createList,getLists,renameList }
+module.exports = { createList,getLists,renameList,reorderLists }
 
 
