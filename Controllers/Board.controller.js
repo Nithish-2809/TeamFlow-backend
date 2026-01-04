@@ -100,6 +100,35 @@ const getBoardById = async (req, res) => {
   }
 }
 
+const renameBoard = async (req,res) => {
+  try {
+    let { name } = req.body
+    const boardId = req.membership.boardId
+
+    if(!name || !name.trim()) return res.status(400).json({"msg" : "Name cannot be empty"})
+    
+    name = name.trim()
+    
+    const board = await Board.findOneAndUpdate({_id : boardId},{name},{new : true})
+
+    if(!board) {
+      return res.status(404).json({"msg" : "Cannot find the board"})
+    }
+
+    return res.status(200).json({
+      "msg" : "Board renamed sucessfully",
+      board : {
+        _id: board._id,
+        name: board.name
+      }
+    })
+  }
+  catch(err) {
+    console.log(err)
+    return res.status(500).json({"msg" : "Failed to rename the board"})
+  }
+}
 
 
-module.exports = { createBoard,myBoards,getBoardById }
+
+module.exports = { createBoard,myBoards,getBoardById,renameBoard }
