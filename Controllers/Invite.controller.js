@@ -28,4 +28,36 @@ const createInviteLink = async(req,res)=> {
     }
 }
 
-module.exports = { createInviteLink }
+const validateInvite = async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const invite = await Invite.findOne({
+      token,
+      isActive: true,
+      expiresAt: { $gt: new Date() }
+    }).populate("boardId", "name");
+
+    if (!invite) {
+      return res.status(404).json({
+        msg: "Invalid or expired invite link"
+      });
+    }
+
+    return res.status(200).json({
+      board: {
+        _id: invite.boardId._id,
+        name: invite.boardId.name,
+        expiresAt: invite.expiresAt
+      }
+    });
+  }
+   catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      msg: "Failed to validate the invite link"
+    })
+  }
+}
+
+module.exports = { createInviteLink,validateInvite }

@@ -24,6 +24,9 @@ const userRouter = require("./Routes/User.route")
 app.use("/api/users",userRouter)
 const boardRouter = require("./Routes/Board.route")
 app.use("/api/boards",boardRouter)
+const inviteRoutes = require("./Routes/Invite.route");
+app.use("/api/invites", inviteRoutes);
+
 
 
 app.listen(port,()=>console.log(`Server running on port ${port}`) )

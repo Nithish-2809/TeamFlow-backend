@@ -1,10 +1,12 @@
 const express = require("express");
-const isBoardAdmin = require("../Middlewares/isBoardAdmin.middleware");
-const { createInviteLink } = require("../Controllers/Invite.controller");
+const {
+  createInviteLink,
+  validateInvite
+} = require("../Controllers/Invite.controller");
 
 const inviteRouter = express.Router({ mergeParams: true });
 
-inviteRouter
-.post("/", createInviteLink);
+inviteRouter.post("/", createInviteLink);
+inviteRouter.get("/:token", validateInvite);
 
 module.exports = inviteRouter;
