@@ -2,6 +2,7 @@ require("dotenv").config()
 const Invite = require("../Models/Invite.model")
 const mongoose = require("mongoose")
 const crypto = require("crypto")
+const BoardMembership = require("../Models/BoardMembership.model")
 
 const createInviteLink = async(req,res)=> {
     try {
@@ -60,4 +61,53 @@ const validateInvite = async (req, res) => {
   }
 }
 
-module.exports = { createInviteLink,validateInvite }
+const joinViaLink = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const userId = req.user._id;
+
+    const invite = await Invite.findOne({
+      token,
+      expiresAt: { $gt: new Date() },
+      isActive: true
+    });
+
+    if (!invite) {
+      return res.status(400).json({
+        msg: "Invalid or expired invite link"
+      });
+    }
+
+    const boardId = invite.boardId;
+
+    const existingMembership = await BoardMembership.findOne({ boardId, userId });
+
+    if (existingMembership) {
+      if (existingMembership.status === "APPROVED") {
+        return res.status(400).json({ msg: "You are already part of this board" });
+      }
+      if (existingMembership.status === "PENDING") {
+        return res.status(400).json({ msg: "Your request is pending approval" });
+      }
+    }
+
+    await BoardMembership.create({
+      userId,
+      boardId,
+      isAdmin: false,
+      status: "PENDING"
+    });
+
+    return res.status(200).json({
+      msg: "Join request sent. Waiting for admin approval."
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      msg: "Failed to join the board"
+    });
+  }
+}
+
+
+module.exports = { createInviteLink,validateInvite,joinViaLink }
