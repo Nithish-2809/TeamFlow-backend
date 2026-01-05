@@ -136,6 +136,67 @@ const leaveBoard = async (req,res) => {
     }
 }
 
+const makeBoardAdmin = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { boardId, userId } = req.params;
+    const adminId = req.user._id;
+
+    if (adminId.toString() === userId) {
+      return res.status(400).json({
+        msg: "You are already the admin"
+      });
+    }
+
+    const newAdmin = await BoardMembership
+      .findOne({
+        userId,
+        boardId,
+        status: "APPROVED"
+      })
+      .populate("userId", "userName")
+      .session(session);
+
+    if (!newAdmin) {
+      return res.status(404).json({
+        msg: "User is not a member of this board"
+      });
+    }
 
 
-module.exports = {acceptInviteRequest,rejectInviteRequest,removeBoardMember,leaveBoard}
+    await BoardMembership.updateOne(
+      { boardId, userId: adminId, isAdmin: true },
+      { isAdmin: false },
+      { session }
+    );
+
+    
+    await BoardMembership.updateOne(
+      { boardId, userId },
+      { isAdmin: true },
+      { session }
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({
+      msg: "Admin changed successfully",
+      userName: newAdmin.userId.userName
+    });
+
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error(err);
+
+    return res.status(500).json({
+      msg: "Failed to make board admin"
+    });
+  }
+};
+
+
+module.exports = {acceptInviteRequest,rejectInviteRequest,removeBoardMember,leaveBoard,makeBoardAdmin}
