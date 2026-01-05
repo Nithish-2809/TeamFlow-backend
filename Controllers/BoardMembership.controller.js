@@ -227,5 +227,41 @@ const getBoardMembers = async (req, res) => {
   }
 }
 
+const getPendingMembers = async (req, res) => {
+  try {
+    const { boardId } = req.params;
 
-module.exports = {acceptInviteRequest,rejectInviteRequest,removeBoardMember,leaveBoard,makeBoardAdmin,getBoardMembers}
+    const pendingMembers = await BoardMembership.find({
+      boardId,
+      status: "PENDING"
+    })
+      .populate("userId", "userName email")
+      .select("userId createdAt");
+
+    return res.status(200).json({
+      pendingMembers: pendingMembers.map(m => ({
+        userId: m.userId._id,
+        userName: m.userId.userName,
+        email: m.userId.email,
+        requestedAt: m.createdAt
+      }))
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      msg: "Failed to fetch pending members"
+    });
+  }
+}
+
+
+module.exports = {
+    acceptInviteRequest,
+    rejectInviteRequest,
+    removeBoardMember,
+    leaveBoard,
+    makeBoardAdmin,
+    getBoardMembers,
+    getPendingMembers
+}

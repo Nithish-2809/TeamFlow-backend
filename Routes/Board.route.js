@@ -13,7 +13,8 @@ const {
   removeBoardMember,
   leaveBoard,
   makeBoardAdmin,
-  getBoardMembers
+  getBoardMembers,
+  getPendingMembers
 } = require("../Controllers/BoardMembership.controller");
 
 const restrictToLoggedinUserOnly = require("../Middlewares/AuthZ.middleware");
@@ -91,6 +92,12 @@ boardRouter.patch(
 boardRouter.get(
   "/:boardId/members",
   getBoardMembers
+)
+
+boardRouter.get(
+  "/:boardId/members/pending",
+  isBoardAdmin,
+  getPendingMembers
 )
 
 
