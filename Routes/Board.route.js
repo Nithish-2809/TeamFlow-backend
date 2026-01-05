@@ -1,32 +1,70 @@
-const {createBoard,myBoards,getBoardById,renameBoard} = require("../Controllers/Board.controller")
-const express = require("express")
-const restrictToLoggedinUserOnly = require("../Middlewares/AuthZ.middleware")
-const isBoardMember = require("../Middlewares/isBoardMember.middleware")
-const boardRouter = express.Router()
-const listRouter = require("./List.route")
-const inviteRouter = require("./Invite.route")
-const isBoardAdmin = require("../Middlewares/isBoardAdmin.middleware")
+const express = require("express");
 
-boardRouter
-.post('/create',restrictToLoggedinUserOnly,createBoard)
-.get('/',restrictToLoggedinUserOnly,myBoards)
-.get('/:boardId',restrictToLoggedinUserOnly,isBoardMember,getBoardById)
-.patch('/:boardId',restrictToLoggedinUserOnly,isBoardMember,isBoardAdmin,renameBoard)
+const {
+  createBoard,
+  myBoards,
+  getBoardById,
+  renameBoard
+} = require("../Controllers/Board.controller");
 
-boardRouter.use(
-  "/:boardId/lists",
-  restrictToLoggedinUserOnly,
-  isBoardMember,
-  listRouter
-)
+const {
+  acceptInviteRequest,
+  rejectInviteRequest
+} = require("../Controllers/BoardMembership.controller");
 
-boardRouter.use(
-  "/:boardId/invite",
-  restrictToLoggedinUserOnly,
-  isBoardMember,
-  inviteRouter
-)
+const restrictToLoggedinUserOnly = require("../Middlewares/AuthZ.middleware");
+const isBoardMember = require("../Middlewares/isBoardMember.middleware");
+const isBoardAdmin = require("../Middlewares/isBoardAdmin.middleware");
+
+const listRouter = require("./List.route");
+const inviteRouter = require("./Invite.route");
+
+const boardRouter = express.Router();
 
 
-module.exports = boardRouter
+// ==========================
+// GLOBAL BOARD ROUTES
+// ==========================
+boardRouter.use(restrictToLoggedinUserOnly);
 
+boardRouter.post("/create", createBoard);
+boardRouter.get("/", myBoards);
+
+
+// ==========================
+// BOARD-SCOPED ROUTES
+// ==========================
+boardRouter.use("/:boardId", isBoardMember);
+
+boardRouter.get("/:boardId", getBoardById);
+boardRouter.patch("/:boardId", isBoardAdmin, renameBoard);
+
+
+// ==========================
+// LIST ROUTES
+// ==========================
+boardRouter.use("/:boardId/lists", listRouter);
+
+
+// ==========================
+// INVITE ROUTES
+// ==========================
+boardRouter.use("/:boardId/invite", inviteRouter);
+
+
+// ==========================
+// MEMBER MANAGEMENT (ADMIN)
+// ==========================
+boardRouter.patch(
+  "/:boardId/members/:userId/approve",
+  isBoardAdmin,
+  acceptInviteRequest
+);
+
+boardRouter.delete(
+  "/:boardId/members/:userId/reject",
+  isBoardAdmin,
+  rejectInviteRequest
+);
+
+module.exports = boardRouter;

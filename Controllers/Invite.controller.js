@@ -4,6 +4,7 @@ const mongoose = require("mongoose")
 const crypto = require("crypto")
 const BoardMembership = require("../Models/BoardMembership.model")
 
+
 const createInviteLink = async(req,res)=> {
     try {
         const boardId = req.membership.boardId
@@ -108,6 +109,7 @@ const joinViaLink = async (req, res) => {
     });
   }
 }
+
 
 
 module.exports = { createInviteLink,validateInvite,joinViaLink }
