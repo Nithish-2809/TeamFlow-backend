@@ -196,7 +196,36 @@ const makeBoardAdmin = async (req, res) => {
       msg: "Failed to make board admin"
     });
   }
-};
+}
+
+const getBoardMembers = async (req, res) => {
+  try {
+    const { boardId } = req.params;
+
+    const boardMembers = await BoardMembership.find({
+      boardId,
+      status: "APPROVED"
+    })
+      .populate("userId", "userName email")
+      .select("userId isAdmin createdAt");
+
+    return res.status(200).json({
+      members: boardMembers.map(m => ({
+        userId: m.userId._id,
+        userName: m.userId.userName,
+        email: m.userId.email,
+        isAdmin: m.isAdmin,
+        joinedAt: m.createdAt
+      }))
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      msg: "Failed to fetch board members"
+    });
+  }
+}
 
 
-module.exports = {acceptInviteRequest,rejectInviteRequest,removeBoardMember,leaveBoard,makeBoardAdmin}
+module.exports = {acceptInviteRequest,rejectInviteRequest,removeBoardMember,leaveBoard,makeBoardAdmin,getBoardMembers}
