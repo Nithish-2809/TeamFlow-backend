@@ -10,7 +10,8 @@ const {
 const {
   acceptInviteRequest,
   rejectInviteRequest,
-  removeBoardMember
+  removeBoardMember,
+  leaveBoard
 } = require("../Controllers/BoardMembership.controller");
 
 const restrictToLoggedinUserOnly = require("../Middlewares/AuthZ.middleware");
@@ -74,5 +75,11 @@ boardRouter.delete(
   removeBoardMember
 )
 
+boardRouter.delete(
+  "/:boardId/leave",
+  leaveBoard
+)
+
 module.exports = boardRouter;
+
 
