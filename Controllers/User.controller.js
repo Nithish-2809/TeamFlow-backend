@@ -185,5 +185,64 @@ const forgotPassword = async (req, res) => {
   }
 }
 
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params
+    const { newPassword, confirmPassword } = req.body
 
-module.exports = { userSignup,userLogin,forgotPassword }
+    if (!token || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        msg: "Invalid request"
+      })
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        msg: "Passwords do not match"
+      })
+    }
+
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(token)
+      .digest("hex")
+
+    
+    const resetToken = await PasswordResetToken.findOne({
+      tokenHash,
+      isUsed: false,
+      expiresAt: { $gt: new Date() }
+    })
+
+    if (!resetToken) {
+      return res.status(400).json({
+        msg: "Reset link is invalid or expired"
+      })
+    }
+
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
+
+    
+    await User.findByIdAndUpdate(resetToken.userId, {
+      password: hashedPassword
+    })
+
+  
+    resetToken.isUsed = true
+    await resetToken.save()
+
+    return res.status(200).json({
+      msg: "Password reset successful"
+    })
+
+  } catch (err) {
+    console.error("Reset password error:", err)
+    return res.status(500).json({
+      msg: "Something went wrong"
+    })
+  }
+}
+
+
+module.exports = { userSignup,userLogin,forgotPassword,resetPassword }

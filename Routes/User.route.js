@@ -1,5 +1,5 @@
 const express = require("express")
-const { userSignup,userLogin,forgotPassword } = require("../Controllers/User.controller")
+const { userSignup,userLogin,forgotPassword,resetPassword } = require("../Controllers/User.controller")
 const upload = require("../Middlewares/FileUpload.middleware")
 
 const userRouter = express.Router()
@@ -12,5 +12,8 @@ userRouter
 )
 .post("/login",userLogin)
 .post("/forgot-password",forgotPassword)
+.patch("/reset-password/:token",resetPassword)
+
+
 
 module.exports = userRouter

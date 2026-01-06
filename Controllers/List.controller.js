@@ -123,7 +123,7 @@ const reorderLists = async (req, res) => {
     console.error(err);
     return res.status(500).json({ msg: "Failed to reorder lists" });
   }
-};
+}
 
 
 module.exports = { createList,getLists,renameList,reorderLists }
