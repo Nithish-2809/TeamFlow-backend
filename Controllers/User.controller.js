@@ -3,6 +3,10 @@ const User = require("../Models/User.Model.js")
 const bcrypt = require("bcrypt")
 const uploadOnCloudinary = require("../utils/Cloudinary.js")
 const jwt = require("jsonwebtoken")
+const sendEmail = require("../utils/sendEmail")
+const PasswordResetToken = require("../Models/PasswordResetToken.model.js")
+const bcrypt = require("bcrypt")
+const crypto = require("crypto")
 
 const userSignup = async (req, res) => {
   try {
@@ -99,7 +103,7 @@ const userLogin = async (req, res) => {
       msg: "Login successful",
       token,
       user: {
-        _id: existingUser._id,
+         _id: existingUser._id,
         userName: existingUser.userName,
         email: existingUser.email,
         fullName: existingUser.fullName,
@@ -115,4 +119,72 @@ const userLogin = async (req, res) => {
   }
 }
 
-module.exports = { userSignup,userLogin }
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body
+
+    const genericResponse = {
+      msg: "A password reset link has been sent to this email"
+    }
+
+    
+    if (!email) {
+      return res.status(200).json(genericResponse)
+    }
+
+    const user = await User.findOne({ email })
+
+    
+    if (!user) {
+      return res.status(200).json(genericResponse)
+    }
+
+
+    await PasswordResetToken.deleteMany({ userId: user._id })
+
+    
+    const rawToken = crypto.randomBytes(32).toString("hex")
+
+  
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex")
+
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000) 
+
+    await PasswordResetToken.create({
+      userId: user._id,
+      tokenHash,
+      expiresAt,
+      isUsed: false
+    })
+
+    
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${rawToken}`
+
+    
+    await sendEmail({
+      to: user.email,
+      subject: "Reset your TeamFlow password",
+      html: `
+        <p>You requested a password reset.</p>
+        <p>Click the link below to reset your password:</p>
+        <a href="${resetUrl}">${resetUrl}</a>
+        <p>This link will expire in 15 minutes.</p>
+        <p>If you did not request this, please ignore this email.</p>
+      `
+    })
+
+    return res.status(200).json(genericResponse)
+
+  } catch (err) {
+    console.error("Forgot password error:", err)
+    return res.status(500).json({
+      msg: "Something went wrong. Please try again later."
+    })
+  }
+}
+
+
+module.exports = { userSignup,userLogin,forgotPassword }

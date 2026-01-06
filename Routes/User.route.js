@@ -1,5 +1,5 @@
 const express = require("express")
-const { userSignup,userLogin } = require("../Controllers/User.controller")
+const { userSignup,userLogin,forgotPassword } = require("../Controllers/User.controller")
 const upload = require("../Middlewares/FileUpload.middleware")
 
 const userRouter = express.Router()
@@ -11,5 +11,6 @@ userRouter
   userSignup
 )
 .post("/login",userLogin)
+.post("/forgot-password",forgotPassword)
 
 module.exports = userRouter
