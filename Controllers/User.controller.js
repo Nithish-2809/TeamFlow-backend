@@ -5,7 +5,6 @@ const uploadOnCloudinary = require("../utils/Cloudinary.js")
 const jwt = require("jsonwebtoken")
 const sendEmail = require("../utils/sendEmail")
 const PasswordResetToken = require("../Models/PasswordResetToken.model.js")
-const bcrypt = require("bcrypt")
 const crypto = require("crypto")
 
 const userSignup = async (req, res) => {
