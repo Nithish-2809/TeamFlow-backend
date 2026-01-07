@@ -64,51 +64,68 @@ const validateInvite = async (req, res) => {
 
 const joinViaLink = async (req, res) => {
   try {
-    const { token } = req.params;
-    const userId = req.user._id;
+    const { token } = req.params
+    const userId = req.user._id
 
     const invite = await Invite.findOne({
       token,
       expiresAt: { $gt: new Date() },
       isActive: true
-    });
+    })
 
     if (!invite) {
       return res.status(400).json({
         msg: "Invalid or expired invite link"
-      });
+      })
     }
 
-    const boardId = invite.boardId;
+    const boardId = invite.boardId
 
-    const existingMembership = await BoardMembership.findOne({ boardId, userId });
+    const existingMembership = await BoardMembership.findOne({ boardId, userId })
 
     if (existingMembership) {
       if (existingMembership.status === "APPROVED") {
-        return res.status(400).json({ msg: "You are already part of this board" });
+        return res.status(400).json({ msg: "You are already part of this board" })
       }
       if (existingMembership.status === "PENDING") {
-        return res.status(400).json({ msg: "Your request is pending approval" });
+        return res.status(400).json({ msg: "Your request is pending approval" })
       }
     }
 
-    await BoardMembership.create({
+    const membership = await BoardMembership.create({
       userId,
       boardId,
       isAdmin: false,
       status: "PENDING"
-    });
+    })
+
+    
+    const io = req.app.get("io")
+
+    const adminMembership = await BoardMembership.findOne({
+      boardId,
+      isAdmin: true,
+      status: "APPROVED"
+    })
+
+    if (adminMembership) {
+      io.to(`user_${adminMembership.userId}`).emit("member:join-request", {
+        boardId,
+        userId
+      })
+    }
 
     return res.status(200).json({
       msg: "Join request sent. Waiting for admin approval."
-    });
+    })
   } catch (err) {
-    console.error(err);
+    console.error(err)
     return res.status(500).json({
       msg: "Failed to join the board"
-    });
+    })
   }
 }
+
 
 
 

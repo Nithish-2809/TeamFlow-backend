@@ -35,31 +35,40 @@ app.use("/api/boards", boardRouter)
 const inviteRoutes = require("./Routes/Invite.route")
 app.use("/api/invites", inviteRoutes)
 
-
+// ===================== HTTP + SOCKET =====================
 const server = http.createServer(app)
-
 
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: process.env.CLIENT_URL,
     methods: ["GET", "POST", "PATCH", "DELETE"],
     credentials: true
   }
 })
 
-
+// expose io to controllers
 app.set("io", io)
 
-
+// ===================== SOCKET LAYER =====================
 io.on("connection", (socket) => {
-    console.log("🟢 socket connected:", socket.id)
+  console.log("🟢 socket connected:", socket.id)
 
-  socket.on("joinBoard", (boardId) => {
-    socket.join(boardId)
+  // 🔐 register user (private room)
+  socket.on("registerUser", (userId) => {
+    socket.join(`user_${userId}`)
+    console.log(`socket ${socket.id} joined user room user_${userId}`)
   })
 
+  // 👥 join board (collaboration room)
+  socket.on("joinBoard", (boardId) => {
+    socket.join(`board_${boardId}`)
+    console.log(`socket ${socket.id} joined board board_${boardId}`)
+  })
+
+  // 👋 leave board
   socket.on("leaveBoard", (boardId) => {
-    socket.leave(boardId)
+    socket.leave(`board_${boardId}`)
+    console.log(`socket ${socket.id} left board board_${boardId}`)
   })
 
   socket.on("disconnect", () => {
@@ -67,7 +76,7 @@ io.on("connection", (socket) => {
   })
 })
 
-
+// ===================== START SERVER =====================
 server.listen(port, () => {
   console.log(`🚀 Server running on port ${port}`)
 })
