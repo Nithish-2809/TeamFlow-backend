@@ -1,9 +1,11 @@
 const express = require("express")
 const taskRouter = express.Router({ mergeParams: true })
 
-const { createTask } = require("../Controllers/Task.controller")
+const { createTask,getBoardTasks } = require("../Controllers/Task.controller")
 
 
-taskRouter.post("/", createTask)
+taskRouter
+.post("/", createTask)
+.get("/", getBoardTasks)
 
 module.exports = taskRouter

@@ -60,5 +60,23 @@ const createTask = async (req, res) => {
   }
 }
 
+const getBoardTasks = async (req,res) => {
+    try {
+        const {boardId} = req.params
 
-module.exports = { createTask }
+        const tasks = await Task.find({
+            boardId
+        }).sort({ listId: 1, position: 1 })
+
+        return res.status(200).json({
+            tasks
+        })
+    }
+    catch(err) {
+        console.error(err)
+        return res.status(500).json({"msg" : "Cannot fetch the tasks!"})
+    }
+}
+
+
+module.exports = { createTask,getBoardTasks }
