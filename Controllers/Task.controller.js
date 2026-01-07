@@ -146,9 +146,45 @@ const updateTask = async (req, res) => {
   }
 }
 
+const deleteTask = async (req, res) => {
+  try {
+    const { taskId, listId, boardId } = req.params
+
+    const taskToBeDeleted = await Task.findOne({
+      _id: taskId,
+      listId,
+      boardId
+    }).select("title")
+
+    if (!taskToBeDeleted) {
+      return res.status(404).json({ msg: "Cannot find the task" })
+    }
+
+    const deletedTaskTitle = taskToBeDeleted.title
+
+    await taskToBeDeleted.deleteOne()
+
+    const io = req.app.get("io")
+
+    io.to(`board_${boardId}`).emit("task:deleted", {
+        boardId,
+        listId,
+        taskId,
+        title: deletedTaskTitle
+    })
+
+
+    return res.status(200).json({
+      msg: "Task deleted successfully",
+      title: deletedTaskTitle
+    })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ msg: "Failed to delete the task" })
+  }
+}
 
 
 
 
-
-module.exports = { createTask,getBoardTasks,updateTask }
+module.exports = { createTask,getBoardTasks,updateTask,deleteTask }
