@@ -78,5 +78,77 @@ const getBoardTasks = async (req,res) => {
     }
 }
 
+const updateTask = async (req, res) => {
+  try {
+    const { boardId, listId, taskId } = req.params
+    const { title, description, status } = req.body
 
-module.exports = { createTask,getBoardTasks }
+    const updateData = {}
+
+    if (title !== undefined) {
+      if (!title.trim()) {
+        return res.status(400).json({ msg: "Title cannot be empty" })
+      }
+      updateData.title = title.trim()
+    }
+
+    if (description !== undefined) {
+      updateData.description = description
+    }
+
+    if (status !== undefined) {
+      updateData.status = status
+    }
+
+    const updatedTask = await Task.findOneAndUpdate(
+      {
+        _id: taskId,
+        boardId,
+        listId
+      },
+      updateData,
+      { new: true }
+    )
+
+    if (!updatedTask) {
+      return res.status(404).json({ msg: "Task not found in this list" })
+    }
+
+    const io = req.app.get("io")
+
+    io.to(`board_${boardId}`).emit("task:updated", {
+        boardId,
+        listId,
+        task: {
+            _id: updatedTask._id,
+            title: updatedTask.title,
+            description: updatedTask.description,
+            status: updatedTask.status,
+            position: updatedTask.position
+        }
+    })
+
+
+    return res.status(200).json({
+      msg: "Task updated successfully",
+      task: {
+        _id: updatedTask._id,
+        title: updatedTask.title,
+        description: updatedTask.description,
+        status: updatedTask.status,
+        listId: updatedTask.listId,
+        position: updatedTask.position
+      }
+    })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ msg: "Failed to update the task" })
+  }
+}
+
+
+
+
+
+
+module.exports = { createTask,getBoardTasks,updateTask }
