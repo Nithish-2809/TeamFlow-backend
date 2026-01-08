@@ -2,7 +2,6 @@ require("dotenv").config()
 const Task = require("../Models/Task.model")
 const mongoose = require("mongoose")
 const BoardMembership = require("../Models/BoardMembership.model")
-const User = require("../Models/User.model")
 const sendEmail = require("../Utils/sendEmail")
 
 
@@ -92,7 +91,6 @@ const createTask = async (req, res) => {
     return res.status(500).json({ msg: "Failed to create a task" })
   }
 }
-
 
 const getBoardTasks = async (req,res) => {
     try {
@@ -218,7 +216,57 @@ const deleteTask = async (req, res) => {
   }
 }
 
+const reorderTasks = async (req, res) => {
+  try {
+    const { orderedTaskIds } = req.body
+    const { boardId, listId } = req.params
+
+    if (!Array.isArray(orderedTaskIds) || orderedTaskIds.length === 0) {
+      return res.status(400).json({
+        msg: "orderedTaskIds must be a non-empty array"
+      })
+    }
+
+    const count = await Task.countDocuments({
+      _id: { $in: orderedTaskIds },
+      boardId,
+      listId
+    })
+
+    if (count !== orderedTaskIds.length) {
+      return res.status(400).json({
+        msg: "Invalid task reorder data"
+      })
+    }
+
+    const bulkOps = orderedTaskIds.map((taskId, index) => ({
+      updateOne: {
+        filter: { _id: taskId, boardId, listId },
+        update: { position: index + 1 }
+      }
+    }))
+
+    await Task.bulkWrite(bulkOps)
+
+    const io = req.app.get("io")
+
+    io.to(`board_${boardId}`).emit("task:reordered", {
+      boardId,
+      listId,
+      orderedTaskIds
+    })
+
+    return res.status(200).json({
+      msg: "Tasks reordered successfully"
+    })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({
+      msg: "Failed to reorder tasks"
+    })
+  }
+}
 
 
 
-module.exports = { createTask,getBoardTasks,updateTask,deleteTask }
+module.exports = { createTask,getBoardTasks,updateTask,deleteTask,reorderTasks }
