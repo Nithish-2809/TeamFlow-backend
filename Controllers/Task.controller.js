@@ -1,5 +1,10 @@
+require("dotenv").config()
 const Task = require("../Models/Task.model")
 const mongoose = require("mongoose")
+const BoardMembership = require("../Models/BoardMembership.model")
+const User = require("../Models/User.model")
+const sendEmail = require("../Utils/sendEmail")
+
 
 const createTask = async (req, res) => {
   try {
@@ -21,26 +26,55 @@ const createTask = async (req, res) => {
 
     const newTask = await Task.create({
       title,
-      description,
+      description: description || "",
       boardId,
       listId,
       position: nextPosition,
       createdBy: user._id
     })
-    
+
     const io = req.app.get("io")
 
     io.to(`board_${boardId}`).emit("task:created", {
-        boardId,
-        listId,
-        task: {
-            _id: newTask._id,
-            title: newTask.title,
-            description: newTask.description,
-            status: newTask.status,
-            position: newTask.position
-        }
+      boardId,
+      listId,
+      task: {
+        _id: newTask._id,
+        title: newTask.title,
+        description: newTask.description,
+        status: newTask.status,
+        position: newTask.position
+      }
     })
+
+    try {
+      const members = await BoardMembership.find({
+        boardId,
+        status: "APPROVED"
+      }).populate("userId", "email userName")
+
+      const recipients = members
+        .filter(m => m.userId._id.toString() !== user._id.toString())
+        .map(m => m.userId.email)
+
+      if (recipients.length > 0) {
+        await sendEmail({
+          to: recipients,
+          subject: "New task added to your board",
+          html: `
+            <p><strong>${user.userName}</strong> added a new task.</p>
+            <p><strong>Task:</strong> ${newTask.title}</p>
+            <p><strong>Status:</strong> ${newTask.status}</p>
+            <p>Open TeamFlow to view details.</p>
+            <a href="${process.env.CLIENT_URL}/boards/${boardId}">
+              Open Board
+            </a>
+          `
+        })
+      }
+    } catch (emailErr) {
+      console.error("Failed to send mail", emailErr)
+    }
 
     return res.status(201).json({
       msg: "A new task is created",
@@ -52,13 +86,13 @@ const createTask = async (req, res) => {
         listId: newTask.listId,
         position: newTask.position
       }
-
     })
   } catch (err) {
-    console.log(err)
+    console.error(err)
     return res.status(500).json({ msg: "Failed to create a task" })
   }
 }
+
 
 const getBoardTasks = async (req,res) => {
     try {
