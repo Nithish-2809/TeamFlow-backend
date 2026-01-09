@@ -21,8 +21,9 @@ const restrictToLoggedinUserOnly = require("../Middlewares/AuthZ.middleware");
 const isBoardMember = require("../Middlewares/isBoardMember.middleware");
 const isBoardAdmin = require("../Middlewares/isBoardAdmin.middleware");
 
-const listRouter = require("./List.route");
-const inviteRouter = require("./Invite.route");
+const listRouter = require("./List.route")
+const inviteRouter = require("./Invite.route")
+const chatRouter = require("./Chat.route")
 
 const boardRouter = express.Router();
 
@@ -98,6 +99,12 @@ boardRouter.get(
   "/:boardId/members/pending",
   isBoardAdmin,
   getPendingMembers
+)
+
+boardRouter.use(
+  "/:boardId/chat",
+  isBoardMember,
+  chatRouter
 )
 
 

@@ -23,8 +23,7 @@ const messageSchema = new mongoose.Schema(
       ref: "Board",
       required: true,
     },
-  },
-  { timestamps: true }
+  },{ timestamps: true }
 )
 
 messageSchema.index({ boardId: 1, createdAt: -1 })
