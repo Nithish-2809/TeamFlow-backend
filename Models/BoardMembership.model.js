@@ -30,6 +30,7 @@ BoardMembershipSchema.index(
   { unique: true }
 )
 
-const BoardMembership =  new mongoose.model("BoardMembership", BoardMembershipSchema)
 
-module.exports  = BoardMembership
+
+module.exports  = 
+  mongoose.models.BoardMembership || mongoose.model("BoardMembership", BoardMembershipSchema)

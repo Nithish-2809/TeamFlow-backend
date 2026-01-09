@@ -28,6 +28,6 @@ const inviteSchema = new mongoose.Schema({
     }
 },{timestamps : true})
 
-const Invite = new mongoose.model("Invite",inviteSchema)
 
-module.exports = Invite
+module.exports = 
+  mongoose.models.Invite || mongoose.model("Invite",inviteSchema)

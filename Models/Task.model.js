@@ -48,5 +48,5 @@ taskSchema.index({ listId: 1, position: 1 })
 taskSchema.index({ boardId: 1 })
 
 
-const Task = mongoose.model("Task", taskSchema)
-module.exports = Task
+module.exports = 
+  mongoose.models.Task || mongoose.model("Task", taskSchema)
