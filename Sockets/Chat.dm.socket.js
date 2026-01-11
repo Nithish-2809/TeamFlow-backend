@@ -10,7 +10,7 @@ const personalChatSocket = (io,socket)=> {
             if(!content || !content.trim() || !receiverId || !boardId) return 
             
             const senderMembership = await BoardMembership.findOne({
-                _id : senderId,
+                userId : senderId,
                 boardId,
                 status : "APPROVED"
             })
@@ -18,7 +18,7 @@ const personalChatSocket = (io,socket)=> {
             if(!senderMembership) return
 
             const receiverMembership = await BoardMembership.findOne({
-                _id : receiverId,
+                userId : receiverId,
                 boardId,
                 status : "APPROVED"
             })
@@ -29,12 +29,13 @@ const personalChatSocket = (io,socket)=> {
                 msg : content.trim(),
                 sender : senderId,
                 readBy : [senderId],
+                receiver : receiverId,
                 boardId
             })
 
-            io.to(`user_${receiverId}`,{
-                message
-            })
+            io.to(`user_${senderId}`).emit("dm:newMessage",{message})
+            io.to(`user_${receiverId}`).emit("dm:newMessage",{message})
+                
         }
         catch(err) {
             console.error(err)
