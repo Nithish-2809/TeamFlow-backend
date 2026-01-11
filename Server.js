@@ -4,7 +4,8 @@ const http = require("http")
 const { Server } = require("socket.io")
 const cors = require("cors")
 const cookieParser = require("cookie-parser")
-
+const boardChatSocket = require("./Sockets/Chat.board.socket")
+const personalChatSocket = require("./Sockets/Chat.dm.socket")
 const ConnectToDataBase = require("./db/Connect")
 ConnectToDataBase()
 
@@ -70,6 +71,9 @@ io.on("connection", (socket) => {
     socket.leave(`board_${boardId}`)
     console.log(`socket ${socket.id} left board board_${boardId}`)
   })
+
+  boardChatSocket(io, socket)
+  personalChatSocket(io, socket)
 
   socket.on("disconnect", () => {
     console.log("🔴 socket disconnected:", socket.id)
