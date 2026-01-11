@@ -1,7 +1,7 @@
 const Message = require("../Models/Message.model")
 const BoardMembership = require("../Models/BoardMembership.model")
 
-const chatSocket = (io, socket) => {
+const boardChatSocket = (io, socket) => {
 
   socket.on("chat:send", async (data) => {
     try {
@@ -39,4 +39,6 @@ const chatSocket = (io, socket) => {
   })
 }
 
-module.exports = chatSocket
+
+
+module.exports = boardChatSocket
