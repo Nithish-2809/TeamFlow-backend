@@ -72,12 +72,20 @@ const getBoardChats = async (req, res) => {
 
       if (!lastMessage) continue
 
+      const unreadCount = await Message.countDocuments({
+        boardId: board._id,
+        receiver: null,
+        sender: { $ne: userId },
+        readBy: { $ne: userId },
+      })
+
       chats.push({
         boardId: board._id,
         board: board.name,
         lastMessage: lastMessage.msg,
         sender: lastMessage.sender?.userName || "Unknown",
         time: lastMessage.createdAt,
+        unreadCount
       })
     }
 
