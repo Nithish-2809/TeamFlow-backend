@@ -2,7 +2,7 @@ require("dotenv").config()
 const Task = require("../Models/Task.model")
 const mongoose = require("mongoose")
 const BoardMembership = require("../Models/BoardMembership.model")
-const sendEmail = require("../Utils/sendEmail")
+const sendEmail = require("../utils/sendEmail")
 
 
 const createTask = async (req, res) => {

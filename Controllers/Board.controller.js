@@ -1,5 +1,10 @@
 const Board = require("../Models/Board.model")
 const BoardMembership = require("../Models/BoardMembership.model")
+const Invite = require("../Models/Invite.model")
+const List = require("../Models/List.model")
+const Task = require("../Models/Task.model")
+const Message = require("../Models/Message.model")
+
 
 
 const createBoard = async (req, res) => {
@@ -141,7 +146,62 @@ const renameBoard = async (req, res) => {
   }
 }
 
+const deleteBoard = async (req, res) => {
+  const session = await mongoose.startSession()
+  session.startTransaction()
+
+  try {
+    const userId = req.user._id
+    const { boardId } = req.params
+
+    const membership = await BoardMembership.findOne({
+      boardId,
+      userId,
+      status: "APPROVED",
+      isAdmin: true,
+    })
+      .populate("boardId", "name")
+      .session(session)
+
+    if (!membership) {
+      await session.abortTransaction()
+      session.endSession()
+      return res.status(403).json({
+        msg: "Only admin can delete the board!",
+      })
+    }
+
+    await Board.deleteOne({ _id: boardId }).session(session)
+    await BoardMembership.deleteMany({ boardId }).session(session)
+    await List.deleteMany({ boardId }).session(session)
+    await Task.deleteMany({ boardId }).session(session)
+    await Message.deleteMany({ boardId }).session(session)
+    await Invite.deleteMany({ boardId }).session(session)
+
+    await session.commitTransaction()
+    session.endSession()
+
+
+    const io = req.app.get("io")
+    io.to(`board_${boardId}`).emit("board:deleted", {
+      boardId,
+      boardName: membership.boardId.name,
+    })
+
+    return res.status(200).json({
+      msg: "Board deleted successfully",
+    })
+  } catch (err) {
+    await session.abortTransaction()
+    session.endSession()
+    console.error("deleteBoard error:", err)
+    return res.status(500).json({
+      msg: "Failed to delete the board",
+    })
+  }
+}
 
 
 
-module.exports = { createBoard,myBoards,getBoardById,renameBoard }
+
+module.exports = { createBoard,myBoards,getBoardById,renameBoard,deleteBoard }

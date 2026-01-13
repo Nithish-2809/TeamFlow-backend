@@ -4,7 +4,8 @@ const {
   createBoard,
   myBoards,
   getBoardById,
-  renameBoard
+  renameBoard,
+  deleteBoard
 } = require("../Controllers/Board.controller");
 
 const {
@@ -44,6 +45,7 @@ boardRouter.use("/:boardId", isBoardMember);
 
 boardRouter.get("/:boardId", getBoardById);
 boardRouter.patch("/:boardId", isBoardAdmin, renameBoard);
+boardRouter.delete("/:boardId",isBoardAdmin,deleteBoard)
 
 
 // ==========================
