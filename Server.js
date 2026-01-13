@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser")
 const boardChatSocket = require("./Sockets/Chat.board.socket")
 const personalChatSocket = require("./Sockets/Chat.dm.socket")
 const messageSeenSocket = require("./Sockets/Chat.markRead.socket")
+const typingSocket = require("./Sockets/Chat.typing.socket")
 const ConnectToDataBase = require("./db/Connect")
 ConnectToDataBase()
 
@@ -76,6 +77,7 @@ io.on("connection", (socket) => {
   boardChatSocket(io, socket)
   personalChatSocket(io, socket)
   messageSeenSocket(io,socket)
+  typingSocket(io,socket)
 
   socket.on("disconnect", () => {
     console.log("🔴 socket disconnected:", socket.id)
