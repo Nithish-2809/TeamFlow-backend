@@ -244,5 +244,26 @@ const resetPassword = async (req, res) => {
   }
 }
 
+const userProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ msg: "Unauthorized" })
+    }
 
-module.exports = { userSignup,userLogin,forgotPassword,resetPassword }
+    const { userName, email, fullName, profilePic } = req.user
+
+    return res.status(200).json({
+      userName,
+      email,
+      fullName,
+      profilePic,
+    })
+  } catch (err) {
+    console.error("userProfile error:", err)
+    return res.status(500).json({ msg: "Unable to fetch profile" })
+  }
+}
+
+
+
+module.exports = { userSignup,userLogin,forgotPassword,resetPassword,userProfile }
