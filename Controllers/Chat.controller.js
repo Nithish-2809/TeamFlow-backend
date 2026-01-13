@@ -42,5 +42,51 @@ const getChatHistory = async (req, res) => {
   }
 }
 
+const getBoardChats = async (req, res) => {
+  try {
+    const userId = req.user._id
 
-module.exports = { getChatHistory }
+  
+    const memberships = await BoardMembership.find({
+      userId,
+      status: "APPROVED",
+    }).populate("boardId", "name")
+
+    if (memberships.length === 0) {
+      return res.status(200).json({ chats: [] })
+    }
+
+    const chats = []
+
+    
+    for (const membership of memberships) {
+      const board = membership.boardId
+
+      
+      const lastMessage = await Message.findOne({
+        boardId: board._id,
+        receiver: null, 
+      })
+        .sort({ createdAt: -1 })
+        .populate("sender", "userName")
+
+      if (!lastMessage) continue
+
+      chats.push({
+        boardId: board._id,
+        board: board.name,
+        lastMessage: lastMessage.msg,
+        sender: lastMessage.sender?.userName || "Unknown",
+        time: lastMessage.createdAt,
+      })
+    }
+
+    return res.status(200).json({ chats })
+  } catch (err) {
+      console.error(err)
+      return res.status(500).json({ msg: "Failed to fetch the chats" })
+  }
+}
+
+
+module.exports = { getChatHistory,getBoardChats }
