@@ -10,7 +10,7 @@ const messageSeenSocket = require("./Sockets/Chat.markRead.socket")
 const typingSocket = require("./Sockets/Chat.typing.socket")
 const ConnectToDataBase = require("./db/Connect")
 const restrictToLoggedinUserOnly = require("./Middlewares/AuthZ.middleware")
-const {getBoardChats} = require("./Controllers/Chat.controller")
+const {getBoardChats,getDmChats} = require("./Controllers/Chat.controller")
 ConnectToDataBase()
 
 const app = express()
@@ -41,6 +41,8 @@ const inviteRoutes = require("./Routes/Invite.route")
 app.use("/api/invites", inviteRoutes)
 
 app.get("/api/board-chats",restrictToLoggedinUserOnly,getBoardChats)
+app.get("/api/personal-chats",restrictToLoggedinUserOnly,getDmChats)
+
 
 
 // ===================== HTTP + SOCKET =====================

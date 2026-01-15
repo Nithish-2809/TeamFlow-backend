@@ -96,5 +96,80 @@ const getBoardChats = async (req, res) => {
   }
 }
 
+const getDmChats = async (req, res) => {
+  try {
+    const userId = req.user._id
 
-module.exports = { getChatHistory,getBoardChats }
+    let memberships = await BoardMembership.find({
+      userId,
+      status: "APPROVED",
+    }).select("boardId")
+
+    const boardIds = memberships.map(m => m.boardId)
+    const chats = []
+
+    for (const boardId of boardIds) {
+      
+      const dmMessages = await Message.find({
+        boardId,
+        receiver: { $ne: null },
+        $or: [
+          { sender: userId },
+          { receiver: userId },
+        ],
+      }).select("sender receiver")
+
+      
+      const dmUsers = new Set()
+
+      dmMessages.forEach(msg => {
+        const otherUser =
+          msg.sender.toString() === userId.toString()
+            ? msg.receiver
+            : msg.sender
+
+        if (otherUser) dmUsers.add(otherUser.toString())
+      })
+
+      
+      for (const otherUserId of dmUsers) {
+        const lastMessage = await Message.findOne({
+          boardId,
+          $or: [
+            { sender: userId, receiver: otherUserId },
+            { sender: otherUserId, receiver: userId },
+          ],
+        })
+          .sort({ createdAt: -1 })
+          .populate("sender", "userName profilePic")
+
+        if (!lastMessage) continue
+
+        const unreadCount = await Message.countDocuments({
+          boardId,
+          sender: otherUserId,
+          receiver: userId,
+          readBy: { $ne: userId },
+        })
+
+        chats.push({
+          boardId,
+          userId: otherUserId,
+          lastMessage: lastMessage.msg,
+          sender: lastMessage.sender.userName,
+          profilePic: lastMessage.sender.profilePic,
+          time: lastMessage.createdAt,
+          unreadCount,
+        })
+      }
+    }
+
+    return res.status(200).json({ chats })
+  } catch (err) {
+    console.error("getDmChats error:", err)
+    return res.status(500).json({ msg: "Failed to fetch your chats!!" })
+  }
+}
+
+
+module.exports = { getChatHistory,getBoardChats,getDmChats }
