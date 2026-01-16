@@ -94,7 +94,7 @@ const getBoardById = async (req, res) => {
 
     const membership = req.membership;
 
-    const board = await Board.findById(boardId);
+    const board = await Board.findById(boardId).populate("leader","userName email")
 
     if (!board) {
       return res.status(404).json({ msg: "Board not found" });
@@ -103,7 +103,11 @@ const getBoardById = async (req, res) => {
     return res.status(200).json({
       _id: board._id,
       name: board.name,
-      leader: board.leader,
+      leader: {
+        _id: board.leader._id,
+        userName: board.leader.userName,
+        email: board.leader.email,
+      },
       isAdmin: membership.isAdmin,
       createdAt: board.createdAt,
     })
