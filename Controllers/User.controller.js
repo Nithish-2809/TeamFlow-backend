@@ -150,7 +150,7 @@ const forgotPassword = async (req, res) => {
       .update(rawToken)
       .digest("hex")
 
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000) 
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000) 
 
     await PasswordResetToken.create({
       userId: user._id,

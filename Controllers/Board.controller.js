@@ -54,18 +54,25 @@ const myBoards = async (req, res) => {
     if (!user) {
       return res.status(401).json({ msg: "Please login to continue" });
     }
-
-
     const memberships = await BoardMembership.find({
       userId: user._id,
       status: "APPROVED",
-    }).populate("boardId");
+    }).populate({
+      path: "boardId",
+      populate: {
+        path: "leader",
+        select: "userName profilePic", 
+      },
+    });
 
-    
     const boards = memberships.map((membership) => ({
       _id: membership.boardId._id,
       name: membership.boardId.name,
-      leader: membership.boardId.leader,
+      leader: {
+        _id: membership.boardId.leader._id,
+        userName: membership.boardId.leader.userName,
+        profilePic: membership.boardId.leader.profilePic,
+      },
       isAdmin: membership.isAdmin,
       createdAt: membership.boardId.createdAt,
     }));
