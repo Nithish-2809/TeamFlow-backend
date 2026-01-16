@@ -1,6 +1,6 @@
 const isBoardAdmin = (req, res, next) => {
   try {
-    const membership = req.boardMembership
+    const membership = req.membership
 
     if (!membership) {
       return res.status(500).json({
