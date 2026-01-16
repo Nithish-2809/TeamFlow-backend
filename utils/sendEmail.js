@@ -1,22 +1,24 @@
-require("dotenv").config()
-const nodemailer = require("nodemailer")
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-    service : "gmail",
-    auth : {
-        user : process.env.USER_EMAIL,
-        pass : process.env.USER_PASSWORD
-    }
-})
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
 
 
 const sendEmail = async ({ to, subject, html }) => {
   try {
     await transporter.sendMail({
-      from: `"TeamFlow" <${process.env.USER_EMAIL}>`,
+      from: `"TeamFlow" <${process.env.EMAIL_FROM}>`,
       to,
       subject,
-      html
+      html,
     })
   } catch (err) {
     console.error("Email send failed:", err)

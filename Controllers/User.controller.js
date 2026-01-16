@@ -170,7 +170,7 @@ const forgotPassword = async (req, res) => {
         <p>You requested a password reset.</p>
         <p>Click the link below to reset your password:</p>
         <a href="${resetUrl}">${resetUrl}</a>
-        <p>This link will expire in 15 minutes.</p>
+        <p>This link will expire in 5 minutes.</p>
         <p>If you did not request this, please ignore this email.</p>
       `
     })
