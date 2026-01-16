@@ -28,7 +28,6 @@ const chatRouter = require("./Chat.route")
 
 const boardRouter = express.Router();
 
-
 // ==========================
 // GLOBAL BOARD ROUTES
 // ==========================
@@ -39,13 +38,19 @@ boardRouter.get("/", myBoards);
 
 
 // ==========================
-// BOARD-SCOPED ROUTES
+// INVITE ROUTES (PUBLIC FOR NON-MEMBERS)
+// ==========================
+boardRouter.use("/:boardId/invite", inviteRouter);
+
+
+// ==========================
+// BOARD-SCOPED ROUTES (MEMBERS ONLY)
 // ==========================
 boardRouter.use("/:boardId", isBoardMember);
 
 boardRouter.get("/:boardId", getBoardById);
 boardRouter.patch("/:boardId", isBoardAdmin, renameBoard);
-boardRouter.delete("/:boardId",isBoardAdmin,deleteBoard)
+boardRouter.delete("/:boardId", isBoardAdmin, deleteBoard);
 
 
 // ==========================
@@ -55,13 +60,7 @@ boardRouter.use("/:boardId/lists", listRouter);
 
 
 // ==========================
-// INVITE ROUTES
-// ==========================
-boardRouter.use("/:boardId/invite", inviteRouter);
-
-
-// ==========================
-// MEMBER MANAGEMENT (ADMIN)
+// MEMBER MANAGEMENT
 // ==========================
 boardRouter.patch(
   "/:boardId/members/:userId/approve",
@@ -79,35 +78,29 @@ boardRouter.delete(
   "/:boardId/members/:userId",
   isBoardAdmin,
   removeBoardMember
-)
+);
 
-boardRouter.delete(
-  "/:boardId/leave",
-  leaveBoard
-)
+boardRouter.delete("/:boardId/leave", leaveBoard);
 
 boardRouter.patch(
   "/:boardId/members/:userId/make-admin",
   isBoardAdmin,
   makeBoardAdmin
-)
+);
 
-boardRouter.get(
-  "/:boardId/members",
-  getBoardMembers
-)
+boardRouter.get("/:boardId/members", getBoardMembers);
 
 boardRouter.get(
   "/:boardId/members/pending",
   isBoardAdmin,
   getPendingMembers
-)
+);
 
-boardRouter.use(
-  "/:boardId/chat",
-  isBoardMember,
-  chatRouter
-)
+
+// ==========================
+// CHAT (MEMBERS ONLY)
+// ==========================
+boardRouter.use("/:boardId/chat", chatRouter);
 
 
 module.exports = boardRouter;
