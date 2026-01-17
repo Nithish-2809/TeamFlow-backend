@@ -7,8 +7,9 @@ const { createTask,getBoardTasks,updateTask,deleteTask,reorderTasks } = require(
 taskRouter
 .post("/", createTask)
 .get("/", getBoardTasks)
+.patch("/reorder",reorderTasks)
 .patch("/:taskId",updateTask)
 .delete("/:taskId",deleteTask)
-.patch("/reorder",reorderTasks)
+
 
 module.exports = taskRouter

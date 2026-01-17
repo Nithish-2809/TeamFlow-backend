@@ -122,17 +122,35 @@ const reorderLists = async (req, res) => {
       })
     }
 
-    const count = await List.countDocuments({
+    // 1️⃣ Total lists in board
+    const totalLists = await List.countDocuments({ boardId })
+
+    if (totalLists !== orderedListIds.length) {
+      return res.status(400).json({
+        msg: "orderedListIds must include ALL lists in the board"
+      })
+    }
+
+    // 2️⃣ Validate IDs belong to board
+    const matchedCount = await List.countDocuments({
       _id: { $in: orderedListIds },
       boardId
     })
 
-    if (count !== orderedListIds.length) {
+    if (matchedCount !== orderedListIds.length) {
       return res.status(400).json({
         msg: "Invalid list reorder data"
       })
     }
 
+    // 3️⃣ Prevent duplicate IDs
+    if (new Set(orderedListIds).size !== orderedListIds.length) {
+      return res.status(400).json({
+        msg: "Duplicate list IDs detected"
+      })
+    }
+
+    // 4️⃣ Reorder
     const bulkOps = orderedListIds.map((listId, index) => ({
       updateOne: {
         filter: { _id: listId, boardId },
@@ -142,7 +160,6 @@ const reorderLists = async (req, res) => {
 
     await List.bulkWrite(bulkOps)
 
-    
     const io = req.app.get("io")
 
     io.to(`board_${boardId}`).emit("list:reordered", {

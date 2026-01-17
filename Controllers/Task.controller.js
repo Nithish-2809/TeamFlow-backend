@@ -236,7 +236,6 @@ const deleteTask = async (req, res) => {
   }
 }
 
-
 const reorderTasks = async (req, res) => {
   try {
     const { orderedTaskIds } = req.body
@@ -248,18 +247,33 @@ const reorderTasks = async (req, res) => {
       })
     }
 
-    const count = await Task.countDocuments({
+    
+    const totalTasks = await Task.countDocuments({
+      boardId,
+      listId
+    })
+
+  
+    if (totalTasks !== orderedTaskIds.length) {
+      return res.status(400).json({
+        msg: "orderedTaskIds must include ALL tasks in the list"
+      })
+    }
+
+    
+    const matchedCount = await Task.countDocuments({
       _id: { $in: orderedTaskIds },
       boardId,
       listId
     })
 
-    if (count !== orderedTaskIds.length) {
+    if (matchedCount !== orderedTaskIds.length) {
       return res.status(400).json({
         msg: "Invalid task reorder data"
       })
     }
 
+    
     const bulkOps = orderedTaskIds.map((taskId, index) => ({
       updateOne: {
         filter: { _id: taskId, boardId, listId },
@@ -286,7 +300,8 @@ const reorderTasks = async (req, res) => {
       msg: "Failed to reorder tasks"
     })
   }
-} 
+}
+
 
 
 
