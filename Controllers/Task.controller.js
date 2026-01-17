@@ -129,7 +129,12 @@ const updateTask = async (req, res) => {
     }
 
     if (status !== undefined) {
-      updateData.status = status
+      if(status!="PENDING" && status!="IN_PROGRESS" && status!="COMPLETED") {
+        return res.status(400).json({"msg" : "Invalid status!!"})
+      }
+      else {
+        updateData.status = status
+      }
     }
 
     const updatedTask = await Task.findOneAndUpdate(
@@ -186,25 +191,40 @@ const deleteTask = async (req, res) => {
       _id: taskId,
       listId,
       boardId
-    }).select("title")
+    }).select("title position")
 
     if (!taskToBeDeleted) {
       return res.status(404).json({ msg: "Cannot find the task" })
     }
 
     const deletedTaskTitle = taskToBeDeleted.title
+    const deletedPosition = taskToBeDeleted.position
 
-    await taskToBeDeleted.deleteOne()
+    
+    await Task.deleteOne({ _id: taskId, listId, boardId })
 
+    
+    await Task.updateMany(
+      {
+        boardId,
+        listId,
+        position: { $gt: deletedPosition }
+      },
+      {
+        $inc: { position: -1 }
+      }
+    )
+
+    
     const io = req.app.get("io")
 
     io.to(`board_${boardId}`).emit("task:deleted", {
-        boardId,
-        listId,
-        taskId,
-        title: deletedTaskTitle
+      boardId,
+      listId,
+      taskId,
+      deletedPosition,
+      title: deletedTaskTitle
     })
-
 
     return res.status(200).json({
       msg: "Task deleted successfully",
@@ -215,6 +235,7 @@ const deleteTask = async (req, res) => {
     return res.status(500).json({ msg: "Failed to delete the task" })
   }
 }
+
 
 const reorderTasks = async (req, res) => {
   try {
@@ -265,7 +286,7 @@ const reorderTasks = async (req, res) => {
       msg: "Failed to reorder tasks"
     })
   }
-}
+} 
 
 
 
