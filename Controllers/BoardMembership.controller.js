@@ -1,5 +1,6 @@
 const mongoose = require("mongoose")
 const BoardMembership = require("../Models/BoardMembership.model")
+const Board = require("../Models/Board.model")
 
 const acceptInviteRequest = async (req, res) => {
   try {
@@ -9,7 +10,7 @@ const acceptInviteRequest = async (req, res) => {
       { userId, boardId, status: "PENDING" },
       { status: "APPROVED" },
       { new: true }
-    )
+    ).populate("userId","userName")
 
     if (!membership) {
       return res.status(404).json({ msg: "No pending request found" })
@@ -21,7 +22,8 @@ const acceptInviteRequest = async (req, res) => {
   
     io.to(`board_${boardId}`).emit("member:joined", {
       boardId,
-      userId
+      userId,
+      userName : membership.userId.userName
     })
 
 
@@ -29,6 +31,7 @@ const acceptInviteRequest = async (req, res) => {
       msg: "Request accepted",
       member: {
         userId: membership.userId,
+        userName : membership.userId.userName,
         boardId: membership.boardId,
         status: membership.status
       }
@@ -172,34 +175,45 @@ const makeBoardAdmin = async (req, res) => {
 
     if (adminId.toString() === userId) {
       return res.status(400).json({
-        msg: "You are already the admin"
+        msg: "You are already the admin",
       })
     }
 
-    const newAdmin = await BoardMembership
-      .findOne({
-        userId,
-        boardId,
-        status: "APPROVED"
-      })
+    
+    const newAdmin = await BoardMembership.findOne({
+      userId,
+      boardId,
+      status: "APPROVED",
+    })
       .populate("userId", "userName")
       .session(session)
 
     if (!newAdmin) {
+      await session.abortTransaction()
+      session.endSession()
       return res.status(404).json({
-        msg: "User is not a member of this board"
+        msg: "User is not a member of this board",
       })
     }
 
+    
     await BoardMembership.updateOne(
       { boardId, userId: adminId, isAdmin: true },
       { isAdmin: false },
       { session }
     )
 
+    
     await BoardMembership.updateOne(
       { boardId, userId },
       { isAdmin: true },
+      { session }
+    )
+
+    
+    await Board.updateOne(
+      { _id: boardId },
+      { leader: userId },
       { session }
     )
 
@@ -212,24 +226,24 @@ const makeBoardAdmin = async (req, res) => {
       boardId,
       oldAdminId: adminId,
       newAdminId: userId,
-      newAdminName: newAdmin.userId.userName
+      newAdminName: newAdmin.userId.userName,
     })
 
     return res.status(200).json({
       msg: "Admin changed successfully",
-      userName: newAdmin.userId.userName
+      userName: newAdmin.userId.userName,
     })
-
   } catch (err) {
     await session.abortTransaction()
     session.endSession()
     console.error(err)
 
     return res.status(500).json({
-      msg: "Failed to make board admin"
+      msg: "Failed to make board admin",
     })
   }
 }
+
 
 const getBoardMembers = async (req, res) => {
   try {
