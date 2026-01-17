@@ -5,7 +5,8 @@ const {
   createList,
   getLists,
   renameList,
-  reorderLists
+  reorderLists,
+  deleteLists
 } = require("../Controllers/List.controller")
 
 const  restrictToLoggedinUserOnly = require("../Middlewares/AuthZ.middleware")
@@ -19,11 +20,12 @@ listRouter.post("/", restrictToLoggedinUserOnly, isBoardAdmin, createList)
 listRouter.get("/", restrictToLoggedinUserOnly, isBoardMember, getLists)
 listRouter.patch("/reorder", restrictToLoggedinUserOnly, isBoardAdmin, reorderLists)
 listRouter.patch("/:listId", restrictToLoggedinUserOnly, isBoardAdmin, renameList)
+listRouter.delete("/:listId", restrictToLoggedinUserOnly, isBoardAdmin, deleteLists)
 
 
 
 listRouter.use(
-  "/:listId/tasks",
+  "/:listId/tasks", 
   restrictToLoggedinUserOnly,
   isBoardMember,
   taskRouter

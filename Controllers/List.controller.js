@@ -1,3 +1,4 @@
+const BoardMembershipModel = require("../Models/BoardMembership.model")
 const List = require("../Models/List.model")
 const mongoose = require("mongoose")
 
@@ -160,9 +161,56 @@ const reorderLists = async (req, res) => {
   }
 }
 
+const deleteLists = async (req, res) => {
+  try {
+    const { boardId, listId } = req.params
+
+    const listToBeDeleted = await List.findOne({
+      _id: listId,
+      boardId
+    })
+
+    if (!listToBeDeleted) {
+      return res.status(404).json({ msg: "List not found" })
+    }
+
+    const deletedPosition = listToBeDeleted.position
+    const listName = listToBeDeleted.name
+
+    
+    await List.deleteOne({ _id: listId, boardId })
+
+    
+    await List.updateMany(
+      {
+        boardId,
+        position: { $gt: deletedPosition }
+      },
+      {
+        $inc: { position: -1 }
+      }
+    )
+
+    
+    const io = req.app.get("io")
+    io.to(`board_${boardId}`).emit("list:deleted", {
+      boardId,
+      listId,
+      deletedPosition
+    })
+
+    return res.status(200).json({
+      msg: "List deleted successfully",
+      list_name: listName
+    })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ msg: "Failed to delete the list" })
+  }
+}
 
 
 
-module.exports = { createList,getLists,renameList,reorderLists }
+module.exports = { createList,getLists,renameList,reorderLists,deleteLists }
 
 
