@@ -244,7 +244,6 @@ const makeBoardAdmin = async (req, res) => {
   }
 }
 
-
 const getBoardMembers = async (req, res) => {
   try {
     const { boardId } = req.params;

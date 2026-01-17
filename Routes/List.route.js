@@ -17,8 +17,9 @@ const taskRouter = require("./Task.route")
 
 listRouter.post("/", restrictToLoggedinUserOnly, isBoardAdmin, createList)
 listRouter.get("/", restrictToLoggedinUserOnly, isBoardMember, getLists)
-listRouter.patch("/:listId", restrictToLoggedinUserOnly, isBoardAdmin, renameList)
 listRouter.patch("/reorder", restrictToLoggedinUserOnly, isBoardAdmin, reorderLists)
+listRouter.patch("/:listId", restrictToLoggedinUserOnly, isBoardAdmin, renameList)
+
 
 
 listRouter.use(
