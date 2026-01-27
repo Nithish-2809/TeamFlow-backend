@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken")
 const sendEmail = require("../utils/sendEmail")
 const PasswordResetToken = require("../Models/PasswordResetToken.model.js")
 const crypto = require("crypto")
+const verifyGoogleToken = require("../utils/googleAuth.js")
 
 const userSignup = async (req, res) => {
   try {
@@ -264,6 +265,83 @@ const userProfile = async (req, res) => {
   }
 }
 
+const googleSignup = async (req,res)=> {
+  try {
+    const { idToken } = req.body
+
+    if(!idToken) {
+      return res.status(400).json({"msg" : "Google id token is required"})
+    }
+
+    const {fullName,email,profilePic} = await verifyGoogleToken(idToken)
+
+    const existingUser = await User.findOne({ email })
+
+    if(existingUser) {
+      return res.status(409).json({
+        "msg" : "User already exists!!Please login"
+      })
+    }
+
+    const user = await User.create({
+      userName : email.split("@")[0],
+      email,
+      fullName,
+      password : null,
+      profilePic
+    })
+
+    return res.status(201).json({
+      "msg" : "User signup successful",
+      user
+    })
+  }
+  catch(err) {
+    console.error(err)
+    return res.status(500).json({"msg" : "Google Signup failed"})
+  }
+}
+
+const googleLogin = async (req,res)=> {
+  try {
+    const { idToken } = req.body
+    if(!idToken) {
+      return res.status(400).json({"msg" : "Google token id required"})
+    }
+
+    const {email,fullName,profilePic} = await verifyGoogleToken(idToken)
+
+    const existingUser = await User.findOne({ email })
+
+    if(!existingUser) {
+      return res.status(404).json({"msg" : "User not found.Please signup"})
+    }
+
+    const token = jwt.sign(
+      {userId : existingUser._id},
+      process.env.JWT_SECRET,
+      {expiresIn : "1d"}
+    )
+
+    return res.status(200).json({
+      msg: "Google login successful",
+      token,
+      user: {
+        _id: existingUser._id,
+        userName: existingUser.userName,
+        email: existingUser.email,
+        fullName: existingUser.fullName,
+        profilePic: existingUser.profilePic
+      }
+    })
 
 
-module.exports = { userSignup,userLogin,forgotPassword,resetPassword,userProfile }
+  }
+  catch(err) {
+    console.error(err)
+    return res.status(500).json({"msg" : "Google login failed"})
+  }
+}
+
+
+module.exports = { userSignup,userLogin,forgotPassword,resetPassword,userProfile,googleSignup,googleLogin }
