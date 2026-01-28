@@ -16,6 +16,12 @@ ConnectToDataBase()
 const app = express()
 const port = process.env.PORT || 2231
 
+app.use((req, res, next) => {
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
+  next();
+});
+
 
 app.use(cors({
   origin: process.env.CLIENT_URL,
