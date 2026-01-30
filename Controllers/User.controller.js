@@ -265,62 +265,67 @@ const userProfile = async (req, res) => {
   }
 }
 
-const googleSignup = async (req,res)=> {
+const googleSignup = async (req, res) => {
   try {
     const { idToken } = req.body
 
-    if(!idToken) {
-      return res.status(400).json({"msg" : "Google id token is required"})
+    if (!idToken) {
+      return res.status(400).json({ msg: "Google id token is required" })
     }
 
-    const {fullName,email,profilePic} = await verifyGoogleToken(idToken)
+    const { fullName, email, profilePic } = await verifyGoogleToken(idToken)
 
-    const existingUser = await User.findOne({ email })
+    const normalizedEmail = email.toLowerCase().trim()
 
-    if(existingUser) {
+    const existingUser = await User.findOne({ email: normalizedEmail })
+
+    if (existingUser) {
       return res.status(409).json({
-        "msg" : "User already exists!!Please login"
+        msg: "User already exists!!Please login"
       })
     }
 
     const user = await User.create({
-      userName : email.split("@")[0],
-      email,
+      userName: normalizedEmail.split("@")[0],
+      email: normalizedEmail,
       fullName,
-      password : null,
+      password: null,
       profilePic
     })
 
     return res.status(201).json({
-      "msg" : "User signup successful",
+      msg: "User signup successful",
       user
     })
-  }
-  catch(err) {
+
+  } catch (err) {
     console.error(err)
-    return res.status(500).json({"msg" : "Google Signup failed"})
+    return res.status(500).json({ msg: "Google Signup failed" })
   }
 }
 
-const googleLogin = async (req,res)=> {
+const googleLogin = async (req, res) => {
   try {
     const { idToken } = req.body
-    if(!idToken) {
-      return res.status(400).json({"msg" : "Google token id required"})
+
+    if (!idToken) {
+      return res.status(400).json({ msg: "Google token id required" })
     }
 
-    const {email,fullName,profilePic} = await verifyGoogleToken(idToken)
+    const { email } = await verifyGoogleToken(idToken)
 
-    const existingUser = await User.findOne({ email })
+    const normalizedEmail = email.toLowerCase().trim()
 
-    if(!existingUser) {
-      return res.status(404).json({"msg" : "User not found.Please signup"})
+    const existingUser = await User.findOne({ email: normalizedEmail })
+
+    if (!existingUser) {
+      return res.status(404).json({ msg: "User not found.Please signup" })
     }
 
     const token = jwt.sign(
-      {userId : existingUser._id},
+      { userId: existingUser._id },
       process.env.JWT_SECRET,
-      {expiresIn : "1d"}
+      { expiresIn: "1d" }
     )
 
     return res.status(200).json({
@@ -335,13 +340,12 @@ const googleLogin = async (req,res)=> {
       }
     })
 
-
-  }
-  catch(err) {
+  } catch (err) {
     console.error(err)
-    return res.status(500).json({"msg" : "Google login failed"})
+    return res.status(500).json({ msg: "Google login failed" })
   }
 }
+
 
 
 module.exports = { userSignup,userLogin,forgotPassword,resetPassword,userProfile,googleSignup,googleLogin }
