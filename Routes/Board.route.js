@@ -5,7 +5,8 @@ const {
   myBoards,
   getBoardById,
   renameBoard,
-  deleteBoard
+  deleteBoard,
+  pendingBoards
 } = require("../Controllers/Board.controller");
 
 const {
@@ -35,6 +36,7 @@ boardRouter.use(restrictToLoggedinUserOnly);
 
 boardRouter.post("/create", createBoard);
 boardRouter.get("/", myBoards);
+boardRouter.get("/pending-boards",pendingBoards)
 
 
 // ==========================

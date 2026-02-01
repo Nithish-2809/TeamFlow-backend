@@ -55,6 +55,7 @@ const myBoards = async (req, res) => {
     if (!user) {
       return res.status(401).json({ msg: "Please login to continue" });
     }
+
     const memberships = await BoardMembership.find({
       userId: user._id,
       status: "APPROVED",
@@ -62,21 +63,31 @@ const myBoards = async (req, res) => {
       path: "boardId",
       populate: {
         path: "leader",
-        select: "userName profilePic", 
+        select: "userName profilePic",
       },
     });
 
-    const boards = memberships.map((membership) => ({
-      _id: membership.boardId._id,
-      name: membership.boardId.name,
-      leader: {
-        _id: membership.boardId.leader._id,
-        userName: membership.boardId.leader.userName,
-        profilePic: membership.boardId.leader.profilePic,
-      },
-      isAdmin: membership.isAdmin,
-      createdAt: membership.boardId.createdAt,
-    }));
+    const boards = await Promise.all(
+      memberships.map(async (membership) => {
+        const membersCount = await BoardMembership.countDocuments({
+          boardId: membership.boardId._id,
+          status: "APPROVED",
+        });
+
+        return {
+          _id: membership.boardId._id,
+          name: membership.boardId.name,
+          leader: {
+            _id: membership.boardId.leader._id,
+            userName: membership.boardId.leader.userName,
+            profilePic: membership.boardId.leader.profilePic,
+          },
+          isAdmin: membership.isAdmin,
+          membersCount,
+          updatedAt: membership.boardId.updatedAt,
+        };
+      })
+    );
 
     return res.status(200).json({ boards });
   } catch (err) {
@@ -213,7 +224,44 @@ const deleteBoard = async (req, res) => {
   }
 }
 
+const pendingBoards = async (req, res) => {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ msg: "Please login to continue" });
+    }
+
+    const memberships = await BoardMembership.find({
+      userId: user._id,
+      status: "PENDING",
+    }).populate({
+      path: "boardId",
+      populate: {
+        path: "leader",
+        select: "userName profilePic",
+      },
+    });
+
+    const boards = memberships.map((membership) => ({
+      _id: membership.boardId._id,
+      name: membership.boardId.name,
+      leader: {
+        _id: membership.boardId.leader._id,
+        userName: membership.boardId.leader.userName,
+        profilePic: membership.boardId.leader.profilePic,
+      },
+      requestedAt: membership.createdAt,
+    }));
+
+    return res.status(200).json({ boards });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to fetch pending boards" });
+  }
+};
 
 
 
-module.exports = { createBoard,myBoards,getBoardById,renameBoard,deleteBoard }
+
+module.exports = { createBoard,myBoards,getBoardById,renameBoard,deleteBoard,pendingBoards }
