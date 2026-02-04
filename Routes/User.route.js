@@ -6,7 +6,8 @@ const {
   resetPassword,
   userProfile,
   googleSignup,
-  googleLogin
+  googleLogin,
+  editProfile
 } = require("../Controllers/User.controller")
 
 const upload = require("../Middlewares/FileUpload.middleware")
@@ -30,6 +31,12 @@ userRouter
   
   .post("/forgot-password", forgotPassword)
   .patch("/reset-password/:token", resetPassword)
+
+  .patch(
+    "/edit-profile",
+    upload.single("profilePic"),
+    editProfile
+  )
 
   
   .get("/profile", restrictToLoggedinUserOnly, userProfile)

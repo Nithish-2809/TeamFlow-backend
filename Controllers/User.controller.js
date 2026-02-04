@@ -346,6 +346,78 @@ const googleLogin = async (req, res) => {
   }
 }
 
+const editProfile = async (req, res) => {
+  try {
+    const userId = req.user._id
+    const { fullName, userName } = req.body
+
+    const updates = {}
+
+    
+    if (fullName && fullName.trim()) {
+      updates.fullName = fullName.trim()
+    }
+
+  
+    if (userName && userName.trim()) {
+      const trimmedUserName = userName.trim()
+
+      
+      const existingUser = await User.findOne({
+        userName: trimmedUserName,
+        _id: { $ne: userId }
+      })
+
+      if (existingUser) {
+        return res.status(409).json({
+          msg: "Username already taken"
+        })
+      }
+
+      updates.userName = trimmedUserName
+    }
+
+    
+    if (req.file) {
+      const uploadedImage = await uploadOnCloudinary(req.file.buffer)
+
+      if (!uploadedImage) {
+        return res.status(500).json({
+          msg: "Profile image upload failed"
+        })
+      }
+
+      updates.profilePic = uploadedImage.secure_url
+    }
+
+    
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({
+        msg: "No valid fields provided"
+      })
+    }
+
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updates,
+      { new: true }
+    ).select("-password")
+
+    return res.status(200).json({
+      msg: "Profile updated successfully",
+      user: updatedUser
+    })
+
+  } catch (err) {
+    console.error("Edit profile error:", err)
+    return res.status(500).json({
+      msg: "Failed to update profile"
+    })
+  }
+}
 
 
-module.exports = { userSignup,userLogin,forgotPassword,resetPassword,userProfile,googleSignup,googleLogin }
+
+
+module.exports = { userSignup,userLogin,forgotPassword,resetPassword,userProfile,googleSignup,googleLogin,editProfile }
