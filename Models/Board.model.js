@@ -11,9 +11,9 @@ const boardSchema = new mongoose.Schema(
       ref: "User",
       required: true
     },
-    icon: {
-      type : String,
-      default : "👨‍💻"
+    emoji: {
+      type: String,
+      default: "📋",
     }
   },
   { timestamps: true }
