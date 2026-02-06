@@ -34,6 +34,7 @@ userRouter
 
   .patch(
     "/edit-profile",
+    restrictToLoggedinUserOnly,
     upload.single("profilePic"),
     editProfile
   )

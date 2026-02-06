@@ -10,7 +10,7 @@ const mongoose = require("mongoose")
 
 const createBoard = async (req, res) => {
   try {
-    const { name } = req.body
+    const { name, emoji } = req.body
     const userId = req.user._id
 
     if (!name) {
@@ -19,8 +19,10 @@ const createBoard = async (req, res) => {
       })
     }
 
+    
     const newBoard = await Board.create({
       name,
+      emoji: emoji || "📋",
       leader: userId
     })
 
@@ -36,7 +38,8 @@ const createBoard = async (req, res) => {
       msg: "Board created successfully",
       board: {
         _id: newBoard._id,
-        name: newBoard.name
+        name: newBoard.name,
+        emoji: newBoard.emoji
       }
     })
 
