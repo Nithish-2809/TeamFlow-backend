@@ -92,23 +92,32 @@ const createTask = async (req, res) => {
   }
 }
 
-const getBoardTasks = async (req,res) => {
-    try {
-        const {boardId} = req.params
+const getListTasks = async (req, res) => {
+  try {
+    const { boardId, listId } = req.params
 
-        const tasks = await Task.find({
-            boardId
-        }).sort({ listId: 1, position: 1 })
+    if (!boardId || !listId) {
+      return res.status(400).json({
+        msg: "BoardId and ListId are required"
+      })
+    }
 
-        return res.status(200).json({
-            tasks
-        })
-    }
-    catch(err) {
-        console.error(err)
-        return res.status(500).json({"msg" : "Cannot fetch the tasks!"})
-    }
+    const tasks = await Task.find({
+      boardId,
+      listId
+    }).sort({ position: 1 })
+
+    return res.status(200).json({
+      tasks
+    })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({
+      msg: "Cannot fetch tasks for this list!"
+    })
+  }
 }
+
 
 const updateTask = async (req, res) => {
   try {
@@ -305,4 +314,4 @@ const reorderTasks = async (req, res) => {
 
 
 
-module.exports = { createTask,getBoardTasks,updateTask,deleteTask,reorderTasks }
+module.exports = { createTask,getListTasks,updateTask,deleteTask,reorderTasks }
