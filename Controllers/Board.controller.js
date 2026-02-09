@@ -66,7 +66,7 @@ const myBoards = async (req, res) => {
       path: "boardId",
       populate: {
         path: "leader",
-        select: "userName profilePic",
+        select: "userName profilePic emoji",
       },
     });
 
@@ -80,6 +80,7 @@ const myBoards = async (req, res) => {
         return {
           _id: membership.boardId._id,
           name: membership.boardId.name,
+          emoji: membership.boardId.emoji || "📋", 
           leader: {
             _id: membership.boardId.leader._id,
             userName: membership.boardId.leader.userName,
@@ -118,6 +119,7 @@ const getBoardById = async (req, res) => {
     return res.status(200).json({
       _id: board._id,
       name: board.name,
+      emoji: board.emoji || "📋", // ✅ ADD
       leader: {
         _id: board.leader._id,
         userName: board.leader.userName,
@@ -126,6 +128,7 @@ const getBoardById = async (req, res) => {
       isAdmin: membership.isAdmin,
       createdAt: board.createdAt,
     })
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ msg: "Failed to fetch the board details!" });
@@ -242,13 +245,14 @@ const pendingBoards = async (req, res) => {
       path: "boardId",
       populate: {
         path: "leader",
-        select: "userName profilePic",
+        select: "userName profilePic emoji",
       },
     });
 
     const boards = memberships.map((membership) => ({
       _id: membership.boardId._id,
       name: membership.boardId.name,
+      emoji: membership.boardId.emoji,
       leader: {
         _id: membership.boardId.leader._id,
         userName: membership.boardId.leader.userName,

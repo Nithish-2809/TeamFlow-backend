@@ -8,8 +8,13 @@ const {
 
 const inviteRouter = express.Router({ mergeParams: true });
 
-inviteRouter.post("/", createInviteLink);
+// NOTE: These routes are now ONLY used for the public /invite/:token routes
+// The /:boardId/invite route is handled directly in Board.route.js
+
+// GET /invite/:token - Validate invite token (PUBLIC)
 inviteRouter.get("/:token", validateInvite);
+
+// POST /invite/:token/join - Join via invite link (REQUIRES AUTH ONLY)
 inviteRouter.post("/:token/join", restrictToLoggedinUserOnly, joinViaLink);
 
 module.exports = inviteRouter;
