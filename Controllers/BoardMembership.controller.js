@@ -260,6 +260,7 @@ const getBoardMembers = async (req, res) => {
         userId: m.userId._id,
         userName: m.userId.userName,
         email: m.userId.email,
+        profilePic : m.userId.profilePic,
         isAdmin: m.isAdmin,
         joinedAt: m.createdAt
       }))
