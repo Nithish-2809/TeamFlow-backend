@@ -252,7 +252,7 @@ const getBoardMembers = async (req, res) => {
       boardId,
       status: "APPROVED"
     })
-      .populate("userId", "userName email")
+      .populate("userId", "userName email profilePic") 
       .select("userId isAdmin createdAt");
 
     return res.status(200).json({
@@ -260,7 +260,7 @@ const getBoardMembers = async (req, res) => {
         userId: m.userId._id,
         userName: m.userId.userName,
         email: m.userId.email,
-        profilePic : m.userId.profilePic,
+        profilePic: m.userId.profilePic, 
         isAdmin: m.isAdmin,
         joinedAt: m.createdAt
       }))
@@ -282,13 +282,14 @@ const getPendingMembers = async (req, res) => {
       boardId,
       status: "PENDING"
     })
-      .populate("userId", "userName email")
+      .populate("userId", "userName email profilePic")
       .select("userId createdAt");
 
     return res.status(200).json({
       pendingMembers: pendingMembers.map(m => ({
         userId: m.userId._id,
         userName: m.userId.userName,
+        profilePic: m.userId.profilePic,
         email: m.userId.email,
         requestedAt: m.createdAt
       }))
