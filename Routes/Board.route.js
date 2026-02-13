@@ -1,143 +1,146 @@
-// boardPage.store.js
+const express = require("express");
 
-import { create } from 'zustand'
-import { 
-  getBoardDetails, 
-  getBoardMembers, 
-  getPendingMembers,
-  approveMemberRequest,
-  rejectMemberRequest,
+const {
+  createBoard,
+  myBoards,
+  getBoardById,
+  renameBoard,
+  deleteBoard,
+  pendingBoards
+} = require("../Controllers/Board.controller");
+
+const {
+  acceptInviteRequest,
+  rejectInviteRequest,
   removeBoardMember,
-  transferAdminRights,
-  leaveBoardRequest,
-  deleteBoardRequest
-} from './boardPage.api'
+  leaveBoard,
+  makeBoardAdmin,
+  getBoardMembers,
+  getPendingMembers
+} = require("../Controllers/BoardMembership.controller");
 
-const useBoardPageStore = create((set, get) => ({
-  boardDetails: null,
-  members: [],
-  pendingMembers: [],
-  loading: false,
-  error: null,
+const {
+  createInviteLink,
+  validateInvite,
+  joinViaLink
+} = require("../Controllers/Invite.controller");
 
-  fetchBoardData: async (boardId) => {
-    set({ loading: true, error: null })
-    
-    try {
-      // 1. Fetch board details first
-      const boardResponse = await getBoardDetails(boardId)
-      const boardData = boardResponse.data
-      
-      // 2. Fetch members
-      const membersResponse = await getBoardMembers(boardId)
-      const membersData = membersResponse.data.members || []
-      
-      // 3. Only fetch pending members if user is admin
-      let pendingMembersData = []
-      if (boardData.isAdmin) {
-        try {
-          const pendingResponse = await getPendingMembers(boardId)
-          pendingMembersData = pendingResponse.data.pendingMembers || []
-        } catch (error) {
-          // If 403, user is not admin - that's OK, just skip pending members
-          if (error.response?.status !== 403) {
-            console.error('Error fetching pending members:', error)
-          }
-        }
-      }
-      
-      set({
-        boardDetails: boardData,
-        members: membersData,
-        pendingMembers: pendingMembersData,
-        loading: false,
-        error: null
-      })
-    } catch (error) {
-      console.error('Error fetching board data:', error)
-      set({
-        loading: false,
-        error: error.response?.data?.msg || 'Failed to load board'
-      })
-    }
-  },
+const restrictToLoggedinUserOnly = require("../Middlewares/AuthZ.middleware");
+const isBoardMember = require("../Middlewares/isBoardMember.middleware");
+const isBoardAdmin = require("../Middlewares/isBoardAdmin.middleware");
 
-  approveMember: async (boardId, userId) => {
-    try {
-      await approveMemberRequest(boardId, userId)
-      
-      // Refresh board data
-      await get().fetchBoardData(boardId)
-    } catch (error) {
-      console.error('Error approving member:', error)
-      throw error
-    }
-  },
+const listRouter = require("./List.route")
+const inviteRouter = require("./Invite.route")
+const chatRouter = require("./Chat.route")
+const boardRouter = express.Router();
 
-  rejectMember: async (boardId, userId) => {
-    try {
-      await rejectMemberRequest(boardId, userId)
-      
-      // Refresh board data
-      await get().fetchBoardData(boardId)
-    } catch (error) {
-      console.error('Error rejecting member:', error)
-      throw error
-    }
-  },
+// ==========================
+// GLOBAL BOARD ROUTES
+// APPLY AUTH TO ALL ROUTES
+// ==========================
+boardRouter.use(restrictToLoggedinUserOnly);
 
-  removeMember: async (boardId, userId) => {
-    try {
-      await removeBoardMember(boardId, userId)
-      
-      // Refresh members list
-      const membersResponse = await getBoardMembers(boardId)
-      set({ members: membersResponse.data.members || [] })
-    } catch (error) {
-      console.error('Error removing member:', error)
-      throw error
-    }
-  },
+// ==========================
+// GLOBAL BOARD ROUTES (NO BOARD ID)
+// ==========================
+boardRouter.post("/create", createBoard);
+boardRouter.get("/", myBoards);
+boardRouter.get("/pending-boards",pendingBoards)
 
-  makeBoardAdmin: async (boardId, userId) => {
-    try {
-      await transferAdminRights(boardId, userId)
-      
-      // Refresh board data to reflect admin change
-      await get().fetchBoardData(boardId)
-    } catch (error) {
-      console.error('Error making admin:', error)
-      throw error
-    }
-  },
+boardRouter.get("/pending-boards", pendingBoards);
 
-  leaveBoard: async (boardId) => {
-    try {
-      await leaveBoardRequest(boardId)
-    } catch (error) {
-      console.error('Error leaving board:', error)
-      throw error
-    }
-  },
+// ==========================
+// INVITE ROUTES (PUBLIC FOR NON-MEMBERS)
+// PUBLIC INVITE ROUTES (NO MEMBERSHIP REQUIRED)
+// These must be BEFORE the /:boardId routes
+// ==========================
+boardRouter.use("/:boardId/invite", inviteRouter);
 
-  deleteBoard: async (boardId) => {
-    try {
-      await deleteBoardRequest(boardId)
-    } catch (error) {
-      console.error('Error deleting board:', error)
-      throw error
-    }
-  },
+boardRouter.get("/invite/:token", validateInvite);
+boardRouter.post("/invite/:token/join", joinViaLink);
 
-  resetBoardState: () => {
-    set({
-      boardDetails: null,
-      members: [],
-      pendingMembers: [],
-      loading: false,
-      error: null
-    })
-  }
-}))
+// ==========================
+// BOARD-SCOPED ROUTES (MEMBERS ONLY)
+// BOARD DETAILS (MEMBERS ONLY)
+// ==========================
+boardRouter.use("/:boardId", isBoardMember);
 
-export { useBoardPageStore }
+boardRouter.get("/:boardId", getBoardById);
+boardRouter.patch("/:boardId", isBoardAdmin, renameBoard);
+boardRouter.delete("/:boardId", isBoardAdmin, deleteBoard);
+
+boardRouter.get("/:boardId", isBoardMember, getBoardById);
+
+// ==========================
+// LIST ROUTES
+// BOARD MANAGEMENT (ADMIN ONLY)
+// ==========================
+boardRouter.use("/:boardId/lists", listRouter);
+boardRouter.patch("/:boardId/rename", isBoardMember, isBoardAdmin, renameBoard);
+boardRouter.delete("/:boardId", isBoardMember, isBoardAdmin, deleteBoard);
+
+// ==========================
+// CREATE INVITE LINK (MEMBERS CAN CREATE)
+// ==========================
+boardRouter.post("/:boardId/invite", isBoardMember, createInviteLink);
+
+// ==========================
+// MEMBER MANAGEMENT
+// MEMBER ROUTES
+// ==========================
+boardRouter.get("/:boardId/members", isBoardMember, getBoardMembers);
+boardRouter.get("/:boardId/members/pending", isBoardMember, isBoardAdmin, getPendingMembers);
+
+boardRouter.patch(
+  "/:boardId/members/:userId/approve",
+  isBoardMember,
+  isBoardAdmin,
+  acceptInviteRequest
+);
+
+boardRouter.delete(
+  "/:boardId/members/:userId/reject",
+  isBoardMember,
+  isBoardAdmin,
+  rejectInviteRequest
+);
+
+boardRouter.delete(
+  "/:boardId/members/:userId",
+  isBoardMember,
+  isBoardAdmin,
+  removeBoardMember
+);
+
+boardRouter.delete("/:boardId/leave", leaveBoard);
+boardRouter.delete("/:boardId/leave", isBoardMember, leaveBoard);
+
+boardRouter.patch(
+  "/:boardId/members/:userId/make-admin",
+  isBoardMember,
+  isBoardAdmin,
+  makeBoardAdmin
+);
+
+boardRouter.get("/:boardId/members", getBoardMembers);
+
+boardRouter.get(
+  "/:boardId/members/pending",
+  isBoardAdmin,
+  getPendingMembers
+);
+
+
+// ==========================
+// CHAT (MEMBERS ONLY)
+// NESTED ROUTERS (LISTS & CHAT)
+// ==========================
+boardRouter.use("/:boardId/chat", chatRouter);
+
+
+module.exports = boardRouter;
+
+boardRouter.use("/:boardId/lists", isBoardMember, listRouter);
+boardRouter.use("/:boardId/chat", isBoardMember, chatRouter);
+
+module.exports = boardRouter;
