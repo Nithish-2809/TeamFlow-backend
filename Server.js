@@ -1,3 +1,4 @@
+const dotenv = require("dotenv")
 require("dotenv").config()
 const express = require("express")
 const http = require("http")
@@ -10,32 +11,25 @@ const messageSeenSocket = require("./Sockets/Chat.markRead.socket")
 const typingSocket = require("./Sockets/Chat.typing.socket")
 const ConnectToDataBase = require("./db/Connect")
 const restrictToLoggedinUserOnly = require("./Middlewares/AuthZ.middleware")
-const {getBoardChats,getDmChats} = require("./Controllers/Chat.controller")
+const { getBoardChats, getDmChats } = require("./Controllers/Chat.controller")
+
 ConnectToDataBase()
 
 const app = express()
 const port = process.env.PORT || 2231
 
 app.use((req, res, next) => {
-  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
-  res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
-  next();
-});
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups")
+  res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none")
+  next()
+})
 
-
-app.use(cors({
-  origin: process.env.CLIENT_URL,
-  credentials: true
-}))
-
+app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
-
-app.get("/", (req, res) => {
-  res.send("simple server🥳🥳")
-})
+app.get("/", (req, res) => res.send("simple server🥳🥳"))
 
 const userRouter = require("./Routes/User.route")
 app.use("/api/users", userRouter)
@@ -46,10 +40,8 @@ app.use("/api/boards", boardRouter)
 const inviteRoutes = require("./Routes/Invite.route")
 app.use("/api/invites", inviteRoutes)
 
-app.get("/api/board-chats",restrictToLoggedinUserOnly,getBoardChats)
-app.get("/api/personal-chats",restrictToLoggedinUserOnly,getDmChats)
-
-
+app.get("/api/board-chats", restrictToLoggedinUserOnly, getBoardChats)
+app.get("/api/personal-chats", restrictToLoggedinUserOnly, getDmChats)
 
 // ===================== HTTP + SOCKET =====================
 const server = http.createServer(app)
@@ -58,42 +50,38 @@ const io = new Server(server, {
   cors: {
     origin: process.env.CLIENT_URL,
     methods: ["GET", "POST", "PATCH", "DELETE"],
-    credentials: true
-  }
+    credentials: true,
+  },
 })
 
-// expose io to controllers
 app.set("io", io)
 
 // ===================== SOCKET LAYER =====================
 io.on("connection", (socket) => {
-  console.log("🟢 socket connected:", socket.id)
+  console.log(`🟢 socket connected: ${socket.id}`)
 
-  // 🔐 register user (private room)
   socket.on("registerUser", (userId) => {
     socket.join(`user_${userId}`)
-    console.log(`socket ${socket.id} joined user room user_${userId}`)
+    console.log(`socket ${socket.id} joined user_${userId}`)
   })
 
-  // 👥 join board (collaboration room)
   socket.on("joinBoard", (boardId) => {
     socket.join(`board_${boardId}`)
-    console.log(`socket ${socket.id} joined board board_${boardId}`)
+    console.log(`socket ${socket.id} joined board_${boardId}`)
   })
 
-  // 👋 leave board
   socket.on("leaveBoard", (boardId) => {
     socket.leave(`board_${boardId}`)
-    console.log(`socket ${socket.id} left board board_${boardId}`)
+    console.log(`socket ${socket.id} left board_${boardId}`)
   })
 
   boardChatSocket(io, socket)
   personalChatSocket(io, socket)
-  messageSeenSocket(io,socket)
-  typingSocket(io,socket)
+  messageSeenSocket(io, socket)
+  typingSocket(io, socket)
 
   socket.on("disconnect", () => {
-    console.log("🔴 socket disconnected:", socket.id)
+    console.log(`🔴 socket disconnected: ${socket.id}`)
   })
 })
 
