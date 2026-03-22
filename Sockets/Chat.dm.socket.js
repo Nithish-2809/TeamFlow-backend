@@ -4,8 +4,8 @@ const BoardMembership = require("../Models/BoardMembership.model")
 const personalChatSocket = (io,socket)=> {
     socket.on("chat:send:dm",async (data)=> {
         try {
-            const senderId = socket.user._id
             const {content,receiverId,boardId}= data
+            const senderId = socket.senderId
 
             if(!content || !content.trim() || !receiverId || !boardId) return 
             

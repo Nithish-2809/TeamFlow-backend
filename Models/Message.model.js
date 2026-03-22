@@ -37,7 +37,7 @@ const messageSchema = new mongoose.Schema(
 )
 
 messageSchema.index({ boardId: 1, createdAt: -1 })
-messageSchema.index({ receiverId: 1, createdAt: -1 })
+messageSchema.index({ receiver: 1, createdAt: -1 })
 
 module.exports =
   mongoose.models.Message || mongoose.model("Message", messageSchema)
