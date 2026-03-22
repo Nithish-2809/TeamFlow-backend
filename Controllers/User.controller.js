@@ -251,9 +251,10 @@ const userProfile = async (req, res) => {
       return res.status(401).json({ msg: "Unauthorized" })
     }
 
-    const { userName, email, fullName, profilePic } = req.user
+    const { _id,userName, email, fullName, profilePic } = req.user
 
     return res.status(200).json({
+      _id,
       userName,
       email,
       fullName,
