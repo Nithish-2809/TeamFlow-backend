@@ -2,7 +2,7 @@ require("dotenv").config()
 const Task = require("../Models/Task.model")
 const mongoose = require("mongoose")
 const BoardMembership = require("../Models/BoardMembership.model")
-const sendEmail = require("../utils/sendEmail")
+const emailQueue = require("../queues/emailQueue")
 
 
 const createTask = async (req, res) => {
@@ -57,7 +57,7 @@ const createTask = async (req, res) => {
         .map(m => m.userId.email)
 
       if (recipients.length > 0) {
-        await sendEmail({
+        await emailQueue.add("send-email",{
           to: recipients,
           subject: "New task added to your board",
           html: `

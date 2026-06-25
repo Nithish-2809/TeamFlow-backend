@@ -3,7 +3,7 @@ const User = require("../Models/User.Model.js")
 const bcrypt = require("bcrypt")
 const uploadOnCloudinary = require("../utils/Cloudinary.js")
 const jwt = require("jsonwebtoken")
-const sendEmail = require("../utils/sendEmail")
+const emailQueue = require("../queues/emailQueue.js")
 const PasswordResetToken = require("../Models/PasswordResetToken.model.js")
 const crypto = require("crypto")
 const verifyGoogleToken = require("../utils/googleAuth.js")
@@ -164,7 +164,7 @@ const forgotPassword = async (req, res) => {
     const resetUrl = `${process.env.CLIENT_URL}/reset-password?token=${rawToken}`
 
     
-    await sendEmail({
+    await emailQueue.add("send-email",{
       to: user.email,
       subject: "Reset your TeamFlow password",
       html: `
