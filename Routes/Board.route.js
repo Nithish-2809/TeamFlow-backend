@@ -34,10 +34,10 @@ const chatRouter = require("./Chat.route");
 
 const boardRouter = express.Router();
 
-// ==========================
+// ===========================
 // PUBLIC ROUTES (NO AUTH REQUIRED)
 // Must be before auth middleware
-// ==========================
+// ===========================
 boardRouter.get("/invite/:token", validateInvite);
 boardRouter.post("/invite/:token/join", restrictToLoggedinUserOnly, joinViaLink);
 
