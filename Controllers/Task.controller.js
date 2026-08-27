@@ -118,7 +118,6 @@ const getListTasks = async (req, res) => {
   }
 }
 
-
 const updateTask = async (req, res) => {
   try {
     const { boardId, listId, taskId } = req.params

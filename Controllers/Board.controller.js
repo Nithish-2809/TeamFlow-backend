@@ -159,7 +159,7 @@ const renameBoard = async (req, res) => {
 
     io.to(`board_${boardId}`).emit("board:renamed", {
       boardId,
-      newName: board.name
+      newName: board.name,
     })
 
     return res.status(200).json({

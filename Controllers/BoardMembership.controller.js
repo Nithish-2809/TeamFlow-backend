@@ -59,6 +59,13 @@ const rejectInviteRequest = async (req, res) => {
     const userName = membership.userId.userName;
 
     await membership.deleteOne();
+    
+    const io = req.app.get("io")
+
+    io.to(`board_${boardId}`).emit("member:rejected", {
+      boardId,
+      userId
+    })
 
     return res.status(200).json({
       msg: "Request rejected",
