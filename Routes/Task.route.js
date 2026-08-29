@@ -8,6 +8,7 @@ taskRouter
 .post("/", createTask)
 .get("/", getListTasks)
 .patch("/reorder",reorderTasks)
+.patch("/:taskId/assign", assignTask)
 .patch("/:taskId",updateTask)
 .delete("/:taskId",deleteTask)
 
