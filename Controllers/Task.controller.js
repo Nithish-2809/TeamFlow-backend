@@ -1,27 +1,26 @@
-require("dotenv").config()
-const Task = require("../Models/Task.model")
-const mongoose = require("mongoose")
-const BoardMembership = require("../Models/BoardMembership.model")
-const emailQueue = require("../queues/emailQueue")
-
+require("dotenv").config();
+const Task = require("../Models/Task.model");
+const mongoose = require("mongoose");
+const BoardMembership = require("../Models/BoardMembership.model");
+const emailQueue = require("../queues/emailQueue");
 
 const createTask = async (req, res) => {
   try {
-    let { title, description } = req.body
-    const { listId, boardId } = req.params
-    const user = req.user
+    let { title, description } = req.body;
+    const { listId, boardId } = req.params;
+    const user = req.user;
 
     if (!title || !title.trim()) {
-      return res.status(400).json({ msg: "Task title cannot be empty" })
+      return res.status(400).json({ msg: "Task title cannot be empty" });
     }
 
-    title = title.trim()
+    title = title.trim();
 
     const lastTask = await Task.findOne({ listId })
       .sort({ position: -1 })
-      .select("position")
+      .select("position");
 
-    const nextPosition = lastTask ? lastTask.position + 1 : 1
+    const nextPosition = lastTask ? lastTask.position + 1 : 1;
 
     const newTask = await Task.create({
       title,
@@ -29,10 +28,10 @@ const createTask = async (req, res) => {
       boardId,
       listId,
       position: nextPosition,
-      createdBy: user._id
-    })
+      createdBy: user._id,
+    });
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
 
     io.to(`board_${boardId}`).emit("task:created", {
       boardId,
@@ -42,22 +41,22 @@ const createTask = async (req, res) => {
         title: newTask.title,
         description: newTask.description,
         status: newTask.status,
-        position: newTask.position
-      }
-    })
+        position: newTask.position,
+      },
+    });
 
     try {
       const members = await BoardMembership.find({
         boardId,
-        status: "APPROVED"
-      }).populate("userId", "email userName")
+        status: "APPROVED",
+      }).populate("userId", "email userName");
 
       const recipients = members
-        .filter(m => m.userId._id.toString() !== user._id.toString())
-        .map(m => m.userId.email)
+        .filter((m) => m.userId._id.toString() !== user._id.toString())
+        .map((m) => m.userId.email);
 
       if (recipients.length > 0) {
-        await emailQueue.add("send-email",{
+        await emailQueue.add("send-email", {
           to: recipients,
           subject: "New task added to your board",
           html: `
@@ -68,11 +67,11 @@ const createTask = async (req, res) => {
             <a href="${process.env.CLIENT_URL}/board/${boardId}">
               Open Board
             </a>
-          `
-        })
+          `,
+        });
       }
     } catch (emailErr) {
-      console.error("Failed to send mail", emailErr)
+      console.error("Failed to send mail", emailErr);
     }
 
     return res.status(201).json({
@@ -83,65 +82,69 @@ const createTask = async (req, res) => {
         description: newTask.description,
         status: newTask.status,
         listId: newTask.listId,
-        position: newTask.position
-      }
-    })
+        position: newTask.position,
+      },
+    });
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ msg: "Failed to create a task" })
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to create a task" });
   }
-}
+};
 
 const getListTasks = async (req, res) => {
   try {
-    const { boardId, listId } = req.params
+    const { boardId, listId } = req.params;
 
     if (!boardId || !listId) {
       return res.status(400).json({
-        msg: "BoardId and ListId are required"
-      })
+        msg: "BoardId and ListId are required",
+      });
     }
 
     const tasks = await Task.find({
       boardId,
-      listId
-    }).sort({ position: 1 })
-
+      listId,
+    })
+      .sort({ position: 1 })
+      .populate("assignedTo", "userName email profilePic");
     return res.status(200).json({
-      tasks
-    })
+      tasks,
+    });
   } catch (err) {
-    console.error(err)
+    console.error(err);
     return res.status(500).json({
-      msg: "Cannot fetch tasks for this list!"
-    })
+      msg: "Cannot fetch tasks for this list!",
+    });
   }
-}
+};
 
 const updateTask = async (req, res) => {
   try {
-    const { boardId, listId, taskId } = req.params
-    const { title, description, status } = req.body
+    const { boardId, listId, taskId } = req.params;
+    const { title, description, status } = req.body;
 
-    const updateData = {}
+    const updateData = {};
 
     if (title !== undefined) {
       if (!title.trim()) {
-        return res.status(400).json({ msg: "Title cannot be empty" })
+        return res.status(400).json({ msg: "Title cannot be empty" });
       }
-      updateData.title = title.trim()
+      updateData.title = title.trim();
     }
 
     if (description !== undefined) {
-      updateData.description = description
+      updateData.description = description;
     }
 
     if (status !== undefined) {
-      if(status!="PENDING" && status!="IN_PROGRESS" && status!="COMPLETED") {
-        return res.status(400).json({"msg" : "Invalid status!!"})
-      }
-      else {
-        updateData.status = status
+      if (
+        status != "PENDING" &&
+        status != "IN_PROGRESS" &&
+        status != "COMPLETED"
+      ) {
+        return res.status(400).json({ msg: "Invalid status!!" });
+      } else {
+        updateData.status = status;
       }
     }
 
@@ -149,30 +152,29 @@ const updateTask = async (req, res) => {
       {
         _id: taskId,
         boardId,
-        listId
+        listId,
       },
       updateData,
-      { new: true }
-    )
+      { new: true },
+    );
 
     if (!updatedTask) {
-      return res.status(404).json({ msg: "Task not found in this list" })
+      return res.status(404).json({ msg: "Task not found in this list" });
     }
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
 
     io.to(`board_${boardId}`).emit("task:updated", {
-        boardId,
-        listId,
-        task: {
-            _id: updatedTask._id,
-            title: updatedTask.title,
-            description: updatedTask.description,
-            status: updatedTask.status,
-            position: updatedTask.position
-        }
-    })
-
+      boardId,
+      listId,
+      task: {
+        _id: updatedTask._id,
+        title: updatedTask.title,
+        description: updatedTask.description,
+        status: updatedTask.status,
+        position: updatedTask.position,
+      },
+    });
 
     return res.status(200).json({
       msg: "Task updated successfully",
@@ -182,135 +184,201 @@ const updateTask = async (req, res) => {
         description: updatedTask.description,
         status: updatedTask.status,
         listId: updatedTask.listId,
-        position: updatedTask.position
-      }
-    })
+        position: updatedTask.position,
+      },
+    });
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ msg: "Failed to update the task" })
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to update the task" });
   }
-}
+};
 
 const deleteTask = async (req, res) => {
   try {
-    const { taskId, listId, boardId } = req.params
+    const { taskId, listId, boardId } = req.params;
 
     const taskToBeDeleted = await Task.findOne({
       _id: taskId,
       listId,
-      boardId
-    }).select("title position")
+      boardId,
+    }).select("title position");
 
     if (!taskToBeDeleted) {
-      return res.status(404).json({ msg: "Cannot find the task" })
+      return res.status(404).json({ msg: "Cannot find the task" });
     }
 
-    const deletedTaskTitle = taskToBeDeleted.title
-    const deletedPosition = taskToBeDeleted.position
+    const deletedTaskTitle = taskToBeDeleted.title;
+    const deletedPosition = taskToBeDeleted.position;
 
-    
-    await Task.deleteOne({ _id: taskId, listId, boardId })
+    await Task.deleteOne({ _id: taskId, listId, boardId });
 
-    
     await Task.updateMany(
       {
         boardId,
         listId,
-        position: { $gt: deletedPosition }
+        position: { $gt: deletedPosition },
       },
       {
-        $inc: { position: -1 }
-      }
-    )
+        $inc: { position: -1 },
+      },
+    );
 
-    
-    const io = req.app.get("io")
+    const io = req.app.get("io");
 
     io.to(`board_${boardId}`).emit("task:deleted", {
       boardId,
       listId,
       taskId,
       deletedPosition,
-      title: deletedTaskTitle
-    })
+      title: deletedTaskTitle,
+    });
 
     return res.status(200).json({
       msg: "Task deleted successfully",
-      title: deletedTaskTitle
-    })
+      title: deletedTaskTitle,
+    });
   } catch (err) {
-    console.error(err)
-    return res.status(500).json({ msg: "Failed to delete the task" })
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to delete the task" });
   }
-}
+};
 
 const reorderTasks = async (req, res) => {
   try {
-    const { orderedTaskIds } = req.body
-    const { boardId, listId } = req.params
+    const { orderedTaskIds } = req.body;
+    const { boardId, listId } = req.params;
 
     if (!Array.isArray(orderedTaskIds) || orderedTaskIds.length === 0) {
       return res.status(400).json({
-        msg: "orderedTaskIds must be a non-empty array"
-      })
+        msg: "orderedTaskIds must be a non-empty array",
+      });
     }
 
-    
     const totalTasks = await Task.countDocuments({
       boardId,
-      listId
-    })
+      listId,
+    });
 
-  
     if (totalTasks !== orderedTaskIds.length) {
       return res.status(400).json({
-        msg: "orderedTaskIds must include ALL tasks in the list"
-      })
+        msg: "orderedTaskIds must include ALL tasks in the list",
+      });
     }
 
-    
     const matchedCount = await Task.countDocuments({
       _id: { $in: orderedTaskIds },
       boardId,
-      listId
-    })
+      listId,
+    });
 
     if (matchedCount !== orderedTaskIds.length) {
       return res.status(400).json({
-        msg: "Invalid task reorder data"
-      })
+        msg: "Invalid task reorder data",
+      });
     }
 
-    
     const bulkOps = orderedTaskIds.map((taskId, index) => ({
       updateOne: {
         filter: { _id: taskId, boardId, listId },
-        update: { position: index + 1 }
-      }
-    }))
+        update: { position: index + 1 },
+      },
+    }));
 
-    await Task.bulkWrite(bulkOps)
+    await Task.bulkWrite(bulkOps);
 
-    const io = req.app.get("io")
+    const io = req.app.get("io");
 
     io.to(`board_${boardId}`).emit("task:reordered", {
       boardId,
       listId,
-      orderedTaskIds
-    })
+      orderedTaskIds,
+    });
 
     return res.status(200).json({
-      msg: "Tasks reordered successfully"
-    })
+      msg: "Tasks reordered successfully",
+    });
   } catch (err) {
-    console.error(err)
+    console.error(err);
     return res.status(500).json({
-      msg: "Failed to reorder tasks"
-    })
+      msg: "Failed to reorder tasks",
+    });
   }
-}
+};
 
+const assignTask = async (req, res) => {
+  try {
+    const { boardId, listId, taskId } = req.params;
+    const { assigneeId } = req.body; // omit/null to unassign
 
+    if (!req.membership.isAdmin) {
+      return res
+        .status(403)
+        .json({ msg: "Only the board leader can assign tasks" });
+    }
 
+    const task = await Task.findOne({ _id: taskId, listId, boardId });
 
-module.exports = { createTask,getListTasks,updateTask,deleteTask,reorderTasks }
+    if (!task) {
+      return res.status(404).json({ msg: "Task not found in this list" });
+    }
+
+    let assignedUser = null;
+
+    if (assigneeId) {
+      const membership = await BoardMembership.findOne({
+        boardId,
+        userId: assigneeId,
+        status: "APPROVED",
+      }).populate("userId", "userName email profilePic");
+
+      if (!membership) {
+        return res.status(400).json({
+          msg: "User is not an approved member of this board",
+        });
+      }
+
+      task.assignedTo = assigneeId;
+      assignedUser = {
+        _id: membership.userId._id,
+        userName: membership.userId.userName,
+        email: membership.userId.email,
+        profilePic: membership.userId.profilePic,
+      };
+    } else {
+      task.assignedTo = null;
+    }
+
+    await task.save();
+
+    const io = req.app.get("io");
+
+    io.to(`board_${boardId}`).emit("task:assigned", {
+      boardId,
+      listId,
+      taskId,
+      assignedTo: assignedUser,
+    });
+
+    return res.status(200).json({
+      msg: assignedUser
+        ? "Task assigned successfully"
+        : "Task unassigned successfully",
+      task: {
+        _id: task._id,
+        assignedTo: assignedUser,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ msg: "Failed to assign the task" });
+  }
+};
+
+module.exports = {
+  createTask,
+  getListTasks,
+  updateTask,
+  deleteTask,
+  reorderTasks,
+  assignTask,
+};
