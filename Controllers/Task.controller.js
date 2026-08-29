@@ -65,7 +65,7 @@ const createTask = async (req, res) => {
             <p><strong>Task:</strong> ${newTask.title}</p>
             <p><strong>Status:</strong> ${newTask.status}</p>
             <p>Open TeamFlow to view details.</p>
-            <a href="${process.env.CLIENT_URL}/boards/${boardId}">
+            <a href="${process.env.CLIENT_URL}/board/${boardId}">
               Open Board
             </a>
           `
