@@ -374,6 +374,62 @@ const assignTask = async (req, res) => {
   }
 };
 
+const getMyTasks = async (req, res) => {
+  try {
+    const userId = req.user._id
+
+    const tasks = await Task.find({
+      assignedTo: userId,
+      status: { $in: ["PENDING", "IN_PROGRESS"] }
+    })
+      .populate("boardId", "name emoji")
+      .populate("listId", "name")
+      .sort({ createdAt: -1 })
+
+    const groupedByBoard = {}
+
+    for (const task of tasks) {
+      // safety: skip orphaned tasks whose board/list no longer exists
+      if (!task.boardId || !task.listId) continue
+
+      const boardKey = task.boardId._id.toString()
+
+      if (!groupedByBoard[boardKey]) {
+        groupedByBoard[boardKey] = {
+          boardId: task.boardId._id,
+          boardName: task.boardId.name,
+          boardEmoji: task.boardId.emoji,
+          pending: [],
+          inProgress: []
+        }
+      }
+
+      const taskPayload = {
+        _id: task._id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        listId: task.listId._id,
+        listName: task.listId.name,
+        position: task.position,
+        createdAt: task.createdAt
+      }
+
+      if (task.status === "PENDING") {
+        groupedByBoard[boardKey].pending.push(taskPayload)
+      } else {
+        groupedByBoard[boardKey].inProgress.push(taskPayload)
+      }
+    }
+
+    return res.status(200).json({
+      boards: Object.values(groupedByBoard)
+    })
+  } catch (err) {
+    console.error(err)
+    return res.status(500).json({ msg: "Failed to fetch your tasks" })
+  }
+}
 module.exports = {
   createTask,
   getListTasks,
@@ -381,4 +437,5 @@ module.exports = {
   deleteTask,
   reorderTasks,
   assignTask,
+  getMyTasks
 };

@@ -1,7 +1,7 @@
 const express = require("express")
 const taskRouter = express.Router({ mergeParams: true })
 
-const { createTask,getListTasks,updateTask,deleteTask,reorderTasks } = require("../Controllers/Task.controller")
+const { createTask,getListTasks,updateTask,deleteTask,reorderTasks,assignTask } = require("../Controllers/Task.controller")
 
 
 taskRouter

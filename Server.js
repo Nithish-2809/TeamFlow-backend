@@ -12,7 +12,7 @@ const typingSocket = require("./Sockets/Chat.typing.socket")
 const ConnectToDataBase = require("./db/Connect")
 const restrictToLoggedinUserOnly = require("./Middlewares/AuthZ.middleware")
 const { getBoardChats, getDmChats } = require("./Controllers/Chat.controller")
-
+const { getMyTasks } = require("./Controllers/Task.controller")
 ConnectToDataBase()
 
 const app = express()
@@ -42,6 +42,8 @@ app.use("/api/invites", inviteRoutes)
 
 app.get("/api/board-chats", restrictToLoggedinUserOnly, getBoardChats)
 app.get("/api/personal-chats", restrictToLoggedinUserOnly, getDmChats)
+
+app.get("/api/my-tasks", restrictToLoggedinUserOnly, getMyTasks)
 
 // ===================== HTTP + SOCKET =====================
 const server = http.createServer(app)
