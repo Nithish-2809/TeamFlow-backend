@@ -14,6 +14,7 @@ const restrictToLoggedinUserOnly = require("./Middlewares/AuthZ.middleware")
 const { getBoardChats, getDmChats } = require("./Controllers/Chat.controller")
 const { getMyTasks } = require("./Controllers/Task.controller")
 ConnectToDataBase()
+require("./workers/emailWorker");
 
 const app = express()
 const port = process.env.PORT || 2231
